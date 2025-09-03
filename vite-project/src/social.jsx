@@ -22,7 +22,7 @@ export default function Social(){
          style={{
         maxWidth: "100%",
         margin: "2em ",
-        backdropFilter: "blur(1px)", 
+        // backdropFilter: "blur(1px)", 
         borderRadius: "1em",
         padding: "2em",
         textAlign: "center",

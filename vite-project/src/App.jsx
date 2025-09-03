@@ -51,7 +51,7 @@ function App() {
 
  
     </div>
-<div style={{backdropFilter: "blur(20px)",position:"absolute",top:"0px",left:"0px",right:"0px",height:"180vh"}}>
+<div style={{backdropFilter: "blur(20px)",position:"absolute",top:"0px",left:"0px",right:"0px",height:"180vh",  backgroundColor:"rgba(0, 0, 0, 0.22)",}}>
    <NavBar setProfile={setProfile} setAbout={setAbout} setProjects={setProjects} setVisbleWelcome={setVisbleWelcome} setWork={setWork}/>
 
 <div
@@ -61,7 +61,7 @@ function App() {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    backdropFilter: "blur(2px)",
+    // backdropFilter: "blur(2px)",
     position: "absolute",
     top: "15%",
     right: "3%",
@@ -70,6 +70,8 @@ function App() {
     height: "10%",
     borderRadius: "4em",
     padding: "0%",
+    
+    
   }}
 >
 <Assistant />
@@ -101,7 +103,7 @@ function App() {
      
         maxWidth: "100%",
         margin: "2em ",
-        backdropFilter: "blur(1px)", 
+        // backdropFilter: "blur(1px)", 
         borderRadius: "1em",
         padding: "2em",
         textAlign: "left",
