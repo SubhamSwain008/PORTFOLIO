@@ -46,6 +46,34 @@ function GitHubContributions({ username, token }) {
 
   return (
     <div style={{ fontFamily: "monospace", textAlign: "center", maxWidth:"80vw",overflow:"auto"}}>
+      <style>
+  {`
+    /* For Webkit browsers */
+    ::-webkit-scrollbar {
+      height: 11em;
+      width: 1em;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 1em;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #8A2BE2, #1E90FF);
+      border-radius: 1em;
+      border: 2px solid rgba(0, 0, 0, 0.3);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #FFD700, #3300ffff);
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color:  #ffd90071 #8A2BE2 ;
+    }
+  `}
+</style>
+
       <h2 style={{ color: "#ffffff" }}>
         {calendar.totalContributions} Contributions
       </h2>

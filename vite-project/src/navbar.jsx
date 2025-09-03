@@ -47,27 +47,7 @@ export default function NavBar({setProfile,setAbout,setProjects,setVisbleWelcome
    Profile
 </GradientText>
        </div>
-      <div style={{ cursor: "pointer" }}
-      
-      onClick={()=>{setProfile(p=>p=false)
-                    setAbout(a=>a=true)
-                    setProjects(p=>p=false)
-                    setVisbleWelcome(p=>p=false)
-                    setWork(p=>p=false)
-      }}
-
-      >
-      
-       <GradientText
-  colors={["#FFD700", "#8A2BE2", "#1E90FF"]
-}
-  animationSpeed={3.5}
-  showBorder={false}
-  className="custom-class"
->
-  About
-</GradientText>
-      </div>
+     
       <div style={{ cursor: "pointer" }}
       
       onClick={()=>{setProfile(p=>p=false)
@@ -109,15 +89,9 @@ export default function NavBar({setProfile,setAbout,setProjects,setVisbleWelcome
 >
   Work experience
 </GradientText>
+
       </div>
-    <div style={{ cursor: "pointer" }}
-      
-      onClick={()=>{setProfile(p=>p=false)
-                    setAbout(a=>a=false)
-                    setProjects(p=>p=true)
-                    setVisbleWelcome(p=>p=false)
-                    // setAssistant(p=>p=false)
-      }}
+      <div style={{ cursor: "pointer" }}
       
       >
       
@@ -128,9 +102,36 @@ export default function NavBar({setProfile,setAbout,setProjects,setVisbleWelcome
   showBorder={false}
   className="custom-class"
 >
-  Contacts
+   <a
+          href="https://github.com/SubhamSwain008/PORTFOLIO/blob/main/vite-project/src/assets/A_Customised_CurVe_CV.pdf"
+          target="_blank"
+          rel="noopener noreferrer">CV</a>
+  
 </GradientText>
       </div>
+   <div style={{ cursor: "pointer" }}
+      
+      onClick={()=>{setProfile(p=>p=false)
+                    setAbout(a=>a=true)
+                    setProjects(p=>p=false)
+                    setVisbleWelcome(p=>p=false)
+                    setWork(p=>p=false)
+      }}
+
+      >
+      
+       <GradientText
+  colors={["#FFD700", "#8A2BE2", "#1E90FF"]
+}
+  animationSpeed={3.5}
+  showBorder={false}
+  className="custom-class"
+>
+  About & Contact
+</GradientText>
+      </div>
+
+       
     </nav>
   );
 }

@@ -79,7 +79,7 @@ const imageLogos = [
         <div style={{  position: 'relative', overflow: 'hidden',maxWidth:"105%",height:"10%",translateX:"-50%",}}>
       <LogoLoop
         logos={imageLogos}
-        speed={150}
+        speed={50}
         direction="left"
         logoHeight={58}
         gap={40}
