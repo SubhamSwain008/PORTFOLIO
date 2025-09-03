@@ -69,7 +69,7 @@ function App() {
     width: "30%",
     height: "10%",
     borderRadius: "4em",
-    padding: "1%",
+    padding: "0%",
   }}
 >
 <Assistant />
@@ -153,7 +153,7 @@ function App() {
 
      </div>
     </div>
-    <div style={{padding:"2em" ,fontSize:"3em",justifySelf:"center",position:"fixed",bottom:"1%"}}>
+    <div style={{padding:"2em" ,fontSize:"3em",justifySelf:"center",position:"fixed",bottom:"1%",}}>
       <GitHubContributions
     username="SubhamSwain008" 
     token={token}

@@ -9,7 +9,7 @@ export default function Social(){
  useEffect(() => {
     intervala.current = setInterval(() => {
       setAngle((prev) => (prev + 1) % 360); // increase smoothly, loop at 360
-    }, 10); // every 100ms
+    }, 30); // every 100ms
 
     return () => clearInterval(intervala.current); // cleanup
   }, []); 
@@ -85,6 +85,14 @@ export default function Social(){
       transition: "transform 0.2s ease, box-shadow 0.3s ease",
       marginBottom:"100%"
     }}
+    onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "scale(1.05)";
+    e.currentTarget.style.boxShadow = "0 4px 12px rgba(255, 200, 255, 0.3)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "scale(1)";
+    e.currentTarget.style.boxShadow = "none";
+  }}
   >
     <img src={linkedin} alt="linkedin.com" style={{ width: "5em"}} />
   </a>
@@ -103,6 +111,14 @@ export default function Social(){
       transition: "transform 0.2s ease, box-shadow 0.3s ease",
       marginBottom:"100%"
     }}
+    onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "scale(1.05)";
+    e.currentTarget.style.boxShadow = "0 4px 12px rgba(255, 200, 255, 0.3)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "scale(1)";
+    e.currentTarget.style.boxShadow = "none";
+  }}
   >
     <img src={git} alt="github.com" style={{ width: "5em"}} />
   </a>
@@ -121,6 +137,14 @@ export default function Social(){
       transition: "transform 0.2s ease, box-shadow 0.3s ease",
       marginBottom:"100%"
     }}
+    onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "scale(1.05)";
+    e.currentTarget.style.boxShadow = "0 4px 12px rgba(255, 200, 255, 0.3)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "scale(1)";
+    e.currentTarget.style.boxShadow = "none";
+  }}
   >
     <img src={inst} alt="instagram.com" style={{ width: "5em"}} />
   </a>

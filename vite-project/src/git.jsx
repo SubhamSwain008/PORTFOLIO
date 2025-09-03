@@ -45,7 +45,7 @@ function GitHubContributions({ username, token }) {
   if (!calendar) return <p>Loading...</p>;
 
   return (
-    <div style={{ fontFamily: "monospace", textAlign: "center" }}>
+    <div style={{ fontFamily: "monospace", textAlign: "center", maxWidth:"80vw",overflow:"auto"}}>
       <h2 style={{ color: "#ffffff" }}>
         {calendar.totalContributions} Contributions
       </h2>

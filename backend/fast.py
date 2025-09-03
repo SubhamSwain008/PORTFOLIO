@@ -11,7 +11,7 @@ load_dotenv()
 key = os.getenv("API_KEYY", "No key")
 port=os.getenv("PORT","5173")
 token=os.getenv("GIT_TOKENS","not found")
-print(token)
+# print(token)
 app = FastAPI()
 
 origins = [

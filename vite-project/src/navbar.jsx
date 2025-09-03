@@ -8,7 +8,7 @@ export default function NavBar({setProfile,setAbout,setProjects,setVisbleWelcome
     <nav
       style={{
         fontFamily:"fantasy",
-        fontSize:"200%",
+        fontSize:"250%",
         
         display: "flex",
         justifyContent: "space-around",
@@ -19,7 +19,7 @@ export default function NavBar({setProfile,setAbout,setProjects,setVisbleWelcome
         fontWeight: "bold",
         boxShadow: `0px 1px 5px rgba(255, 255, 255, 0.6)`,
 
-        backgroundColor:"rgba(0, 0, 0, 0.22)",
+        backgroundColor:"rgba(0, 0, 0, 0.52)",
        
         position:"sticky",
         top:"0px",
