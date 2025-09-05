@@ -14,7 +14,7 @@ import GitHubContributions from "./git.jsx";
 function App() {
   const [profile, setProfile] = useState(false);
   const [about, setAbout] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [asson,setAsson]=useState(10);
   const [project, setProjects] = useState(false);
   const [visible_welcome, setVisbleWelcome] = useState(true);
   const [work, setWork] = useState(false);
@@ -41,6 +41,138 @@ function App() {
           opacity: "1",
         }}
       >
+        <style>
+          {`
+    /* For Webkit browsers */
+    ::-webkit-scrollbar {
+      height: 11em;
+      width: 1em;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 1em;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #ffd90071 ,rgba(0,0,0,0));
+      border-radius: 1em;
+      border: 2px solid rgba(0, 0, 0, 0.3);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #ffd90071 ,rgba(0,0,0,0));
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(22, 59, 170, 0.3) rgba(0,0,0,0);
+    }
+
+    /* ---------- RESPONSIVENESS ---------- */
+
+//     /* Tablet */
+// @media (max-width: 915px) {
+//   .assistant {
+//     bottom: 2% !important;
+//     right: 2% !important;
+//     top: auto !important;
+//     width: 45% !important;
+//   }
+//   .welcome h1 {
+//     font-size: 5em !important;
+//   }
+//   .section {
+//     margin: 1.5em auto !important;
+//     width: 80% !important;
+//   }
+// }
+
+/* Mobile */
+@media (max-width: 916px) {
+ .assistant {
+    position: sticky !important;
+    bottom: 20px !important;  /* sticks at bottom */
+     right: 0% !important;
+   
+  
+    z-index: 1000 !important;
+  }
+  .social {
+    position: relative !important;
+    top: auto !important;
+    bottom: 1em !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    flex-direction: row !important;
+    gap: 1em !important;
+    justify-content: center !important;
+    width: auto !important;
+  }
+  .welcome {
+    margin: 2em auto !important;
+    text-align: center !important;
+    min-height: auto !important;
+  }
+  .welcome h1 {
+    font-size: 2.5em !important;
+  }
+  .section {
+    margin: 1em auto !important;
+    width: 90% !important;
+  }
+  .github {
+    font-size: 1.5em !important;
+    margin: 1em auto !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 614px) {
+  .assistant {
+   position:sticky  !important;
+    top: 900px !important;
+    right: ${asson}% !important;
+    alignItems: "right",
+    justifyContent: "right",
+  
+    margin :0em !important;
+    z-index:1000 !important;
+          
+   
+    
+
+  }
+  .social {
+    position: relative !important;
+    top: auto !important;
+    bottom: 1em !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    flex-direction: row !important;
+    gap: 1em !important;
+    justify-content: center !important;
+    width: auto !important;
+  }
+  .welcome {
+    margin: 2em auto !important;
+    text-align: center !important;
+    min-height: auto !important;
+  }
+  .welcome h1 {
+    font-size: 2.5em !important;
+  }
+  .section {
+    margin: 1em auto !important;
+    width: 90% !important;
+  }
+  .github {
+    font-size: 1.5em !important;
+    margin: 1em auto !important;
+  }
+}
+
+  `}
+        </style>
+
         <video
           autoPlay
           loop
@@ -72,27 +204,17 @@ function App() {
 
         {/* Assistant widget */}
         <div
-          style={{
-            display: "flex",
-            marginTop: "10%",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "absolute",
-            top: "16%",
-            right: "3%",
-            zIndex: 100,
-            width: "30%",
-            height: "10%",
-            borderRadius: "4em",
-            padding: "0%",
-          }}
+          className="assistant"
+          style={{position:"fixed"}}
+          onClick={()=>{
+            setAsson(50)}}
         >
-          <Assistant />
+          <Assistant  setAsson={setAsson}/>
         </div>
 
         {/* Social links */}
         <div
+          className="social"
           style={{
             marginTop: "5%",
             flexDirection: "column",
@@ -111,7 +233,15 @@ function App() {
         </div>
 
         {/* Welcome message */}
-        <div style={{ textAlign: "left", marginTop: "4%", marginRight: "33%", marginLeft: "8%" ,}}>
+        <div
+          className="welcome"
+          style={{
+            textAlign: "center",
+            marginTop: "2%",
+            marginRight: "33%",
+            marginLeft: "10%",
+          }}
+        >
           {visible_welcome && (
             <div
               style={{
@@ -123,15 +253,15 @@ function App() {
                 opacity: "1",
                 justifyItems: "left",
                 justifyContent: "left",
-                minHeight:"40em"
-                
+                minHeight: "40em",
               }}
             >
               <h1
                 style={{
                   fontSize: "4em",
                   fontWeight: "500",
-                  background: "linear-gradient(135deg, #FFD700, #8A2BE2, #1E90FF)",
+                  background:
+                    "linear-gradient(135deg, #FFD700, #8A2BE2, #1E90FF)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -140,9 +270,9 @@ function App() {
               >
                 <TextType
                   text={[
-                    `Welcome to my portfolio`,
+                    `Welcome to my portfolio !`,
                     "A space that brings together my journey,skills, and projects in one place.",
-                    " With an integrated assistant always available to guide you, answer your questions, and help you explore every detail about me with ease",
+                    " With an integrated assistant always available to guide you, answer your questions, and help you explore every detail about me with ease.",
                     "Thank you!",
                   ]}
                   typingSpeed={80}
@@ -157,20 +287,38 @@ function App() {
 
         {/* Main content sections */}
         <div style={{ textAlign: "center" }}>
-          <div style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}>
+          <div
+            className="section"
+            style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}
+          >
             {profile ? <UserProfile /> : ""}
           </div>
-          <div style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}>
+          <div
+            className="section"
+            style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}
+          >
             {about && <About />}
           </div>
-          <div style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}>
+          <div
+            className="section"
+            style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}
+          >
             {project && <Projects />}
           </div>
-          <div style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}>
+          <div
+            className="section"
+            style={{ marginTop: "5%", marginRight: "33%", marginLeft: "15%" }}
+          >
             {work && <Work />}
           </div>
 
-          <div style={{ marginTop: "1%", fontSize: "3em", justifySelf: "center" }}>
+          <div
+            style={{
+              marginTop: "1%",
+              fontSize: "3em",
+              justifySelf: "center",
+            }}
+          >
             <GitHubContributions username="SubhamSwain008" token={token} />
           </div>
         </div>

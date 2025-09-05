@@ -69,7 +69,7 @@ function GitHubContributions({ username, token }) {
     /* Firefox */
     * {
       scrollbar-width: thin;
-      scrollbar-color:  #ffd90071 #8A2BE2 ;
+      scrollbar-color:  rgba(22, 59, 170, 0.3) rgba(0,0,0,0) ;
     }
   `}
 </style>

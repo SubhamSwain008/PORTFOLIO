@@ -3,6 +3,7 @@ import flappy from "../src/assets/flappy.png";
 import git from "../src/assets/git.png"; 
 import e2o from "../src/assets/e2o.png"; 
 import stt from "../src/assets/odiastt.png"; 
+import emo from "../src/assets/emotion.png"; 
 
 import llm from "../src/assets/llm.png"; 
 export default function Projects() {
@@ -29,7 +30,7 @@ export default function Projects() {
   };
 
   const pro3 = {
-    name: "Fine Tuning Automatic Speech Recognition for Odia STT",
+    name: "Fine Tuning ASRfor Odia STT",
     desc: `Automatic Speech Recognition (ASR) has advanced rapidly with multilingual models like Whisper, but Odia remains one of the Indian languages with little to no native support.
 
 Whisper, despite being multilingual, doesn’t officially support Odia. Instead, due to similarities in script and pronunciation, it often misinterprets Odia as Bengali, leading to incorrect transcriptions and poor real-world usability.
@@ -46,15 +47,15 @@ Odia is spoken by over 35 million people. Supporting it in ASR systems isn't jus
   };
 
    const pro4 = {
-    name: "building a full end-to-end voice-assisted system by connecting multiple models together.",
+    name: "building a full end-to-end voice-assisted system ",
     desc: `Here’s how I designed it:
-👂 Speech-to-Text (Hindi ASR)
+Speech-to-Text (Hindi ASR)
  Instead of relying on a generic service, I deployed a fine-tuned Whisper Small of the self model to transcribe Hindi audio into text in real-time.
-🧠 Core Processing (LLM)
+Core Processing (LLM)
  The transcribed text is passed to LLaMA 3.2 (3B model) which handles natural language understanding and generates meaningful responses. This is the “brain” of the assistant, ensuring contextual, accurate replies.
-🗣️ Text-to-Speech (Hindi)
+Text-to-Speech (Hindi)
  To make the assistant respond naturally in voice, I integrated Meta’s facebook/mms-tts-hin model. It converts the LLaMA responses back into Hindi speech, closing the human-like interaction loop.
-⚡ Tech Stack Integration
+Tech Stack Integration
 Frontend: React for user interaction.
 Middleware: Node.js to handle event flow.
 Backend: FastAPI to serve the models efficiently.
@@ -64,8 +65,25 @@ This wasn’t just about making a chatbot speak ,it was about orchestrating mult
     image: llm,
     video: "",
   };
+  const pro5 = {
+    name: "Emotion-Aware Training (Text Classification)",
+    desc: `Instead of using off-the-shelf sentiment tools, I fine-tuned LLaMA 3.2 (1B) on a curated dataset of emotional dialogues and annotated text. The goal wasn’t just sentiment polarity (positive/negative) but nuanced categories like anger, joy, sadness, fear, disgust, surprise, and neutral.
 
-  const projectarr = [pro1, pro2,pro3,pro4];
+Core Model (LLM Backbone):
+LLaMA 3.2 serves as the backbone. Its compact 1B parameter size makes it lightweight and efficient for deployment, while fine-tuning aligns it with the task of recognizing subtle emotional cues in sentences. This ensures the model captures both explicit expressions (“I am furious”) and implicit signals (“I can’t believe this happened again”).
+
+Pipeline Integration:
+Training loop:  PEFT/LoRA for efficient fine-tuning.
+
+
+End Goal:
+This wasn’t just about detecting “positive vs. negative,” but about teaching an open-source LLM to understand human emotions in text—a key step toward emotionally intelligent conversational agents.`,
+    github: `https://github.com/SubhamSwain008/LLAMA_FINTUING_EMOTION_DETECTION.git`,
+    image: emo,
+    video: "",
+  };
+
+  const projectarr = [pro1, pro2,pro3,pro4,pro5];
 
   const [currentPro, setCurrentpro] = useState(projectarr[0]);
   const [counter, setCounter] = useState(0);
@@ -82,7 +100,7 @@ This wasn’t just about making a chatbot speak ,it was about orchestrating mult
   return (
     <div
       style={{
-        maxWidth: "900px",
+       
         margin: "2em auto",
         backdropFilter: "blur(1px)",
         borderRadius: "1em",
@@ -99,7 +117,8 @@ This wasn’t just about making a chatbot speak ,it was about orchestrating mult
           fontSize: "2em",
           marginBottom: "0.5em",
           textTransform: "uppercase",
-          letterSpacing: "1.5px",
+          letterSpacing: "0px",
+          
         }}
       >
         {currentPro.name}
@@ -110,9 +129,12 @@ This wasn’t just about making a chatbot speak ,it was about orchestrating mult
         style={{
           color: "#fff",
           fontSize: "1.1em",
-          lineHeight: "1.6em",
+          lineHeight: "2em",
           textAlign: "justify",
           marginBottom: "1.5em",
+           minHeight: "200px",
+           maxHeight: "200px",
+           overflow:"scroll"
         }}
       >
         {currentPro.desc}
@@ -125,7 +147,7 @@ This wasn’t just about making a chatbot speak ,it was about orchestrating mult
           alt={currentPro.name}
           style={{
             width: "100%",
-            maxHeight: "100%",
+            maxHeight: "400px",
             objectFit: "cover",
             borderRadius: "10px",
             marginBottom: "1.5em",
