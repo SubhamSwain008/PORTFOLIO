@@ -42,11 +42,11 @@ export default function Assistant({ setAsson }) {
     }
   }
 
-  // Sidebar chat container (fixed bottom-right)
+  // Sidebar chat container (desktop default)
   const containerStyle = {
     position: "fixed",
     right: "10%",
-    top: "20%",
+    top: "13%",
     width: "20%",
     height: "500px",
     display: "flex",
@@ -56,11 +56,10 @@ export default function Assistant({ setAsson }) {
       "linear-gradient(135deg, rgba(91,33,182,0.95), rgba(0, 0, 0, 0.85))",
     borderRadius: "1.5em",
     padding: "1.2em",
-    
-    zIndex: 1000,
+    zIndex: 100,
   };
 
-  // Floating button
+  // Floating button (desktop default)
   const buttonStyle = {
     position: "fixed",
     top: "40%",
@@ -72,17 +71,40 @@ export default function Assistant({ setAsson }) {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1000,
-
- 
+    zIndex: 100,
     transition: "all 0.3s ease",
     cursor: "pointer",
   };
 
   return (
-    <div>
+    <div >
       {chat ? (
         <div className="assistant-container" style={containerStyle}>
+          <style>
+            {`
+            /* Tablet view */
+            @media (max-width: 916px){
+              .assistant-container {
+                width: 70% !important;
+                height: 400px !important;
+                right: 5% !important;
+                top: 15% !important;
+              }
+            }
+
+            /* Mobile view */
+            @media (max-width: 614px){
+              .assistant-container {
+                width: 90% !important;
+                height: 350px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                 top: 30% !important;
+              }
+            }
+            `}
+          </style>
+
           {/* Close Button */}
           <button
             style={{
@@ -103,7 +125,13 @@ export default function Assistant({ setAsson }) {
             colors={["#FACC15", "#A78BFA", "#EC4899"]}
             animationSpeed={6}
           >
-            <div style={{ fontSize: "2rem", textAlign: "center",fontWeight:"900" }}>
+            <div
+              style={{
+                fontSize: "2rem",
+                textAlign: "center",
+                fontWeight: "900",
+              }}
+            >
               <h1>THE ASSISTANT</h1>
             </div>
           </GradientText>
@@ -133,13 +161,17 @@ export default function Assistant({ setAsson }) {
                     }}
                   >
                     <p style={{ color: "#E0E0E0", fontSize: "0.85rem" }}>
-                      <span style={{ color: "#EC4899", fontWeight: "bold" }}>
+                      <span
+                        style={{ color: "#EC4899", fontWeight: "bold" }}
+                      >
                         USER:
                       </span>{" "}
                       {msges[msgIdx]}
                     </p>
                     <p style={{ color: "#FACC15", fontSize: "0.85rem" }}>
-                      <span style={{ color: "#A78BFA", fontWeight: "bold" }}>
+                      <span
+                        style={{ color: "#A78BFA", fontWeight: "bold" }}
+                      >
                         ASSISTANT:
                       </span>{" "}
                       {element}
@@ -166,7 +198,7 @@ export default function Assistant({ setAsson }) {
                 color: "#E0E0E0",
                 outline: "none",
                 marginRight: "0.5em",
-                width:"80%"
+                width: "80%",
               }}
             />
             {cansend ? (
@@ -206,7 +238,36 @@ export default function Assistant({ setAsson }) {
           </div>
         </div>
       ) : (
-        <button style={buttonStyle} onClick={() => setChat(true)}>
+        <button
+          style={buttonStyle}
+          className="assistant-button"
+          onClick={() => setChat(true)}
+        >
+          <style>
+            {`
+            /* Tablet view */
+            @media (max-width: 916px){
+              .assistant-button {
+                width: 100px !important;
+                height: 100px !important;
+                right: 5% !important;
+                top: 20% !important;
+              }
+            }
+
+            /* Mobile view */
+            @media (max-width: 614px){
+              .assistant-button {
+                width: 100px !important;
+                height: 100px !important;
+               
+                right: 10px !important;
+                top: 40% !important;
+                
+              }
+            }
+            `}
+          </style>
           <DotLottieReact
             src="../src/assets/bot.lottie"
             loop

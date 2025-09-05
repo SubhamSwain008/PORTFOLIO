@@ -88,14 +88,14 @@ function App() {
 
 /* Mobile */
 @media (max-width: 916px) {
- .assistant {
-    position: sticky !important;
-    bottom: 20px !important;  /* sticks at bottom */
-     right: 0% !important;
+//  .assistant {
+//     position: sticky !important;
+//     bottom: 20px !important;  /* sticks at bottom */
+//      right: 0% !important;
    
   
-    z-index: 1000 !important;
-  }
+//     z-index: 1000 !important;
+//   }
   .social {
     position: relative !important;
     top: auto !important;
@@ -127,20 +127,20 @@ function App() {
 
 /* Mobile */
 @media (max-width: 614px) {
-  .assistant {
-   position:sticky  !important;
-    top: 900px !important;
-    right: ${asson}% !important;
-    alignItems: "right",
-    justifyContent: "right",
+  // .assistant {
+  //  position:sticky  !important;
+  //   top: 900px !important;
+  //   right: ${asson}% !important;
+  //   alignItems: "right",
+  //   justifyContent: "right",
   
-    margin :0em !important;
-    z-index:1000 !important;
+  //   margin :0em !important;
+  //   z-index:1000 !important;
           
    
     
 
-  }
+  // }
   .social {
     position: relative !important;
     top: auto !important;
@@ -203,14 +203,9 @@ function App() {
         />
 
         {/* Assistant widget */}
-        <div
-          className="assistant"
-          style={{position:"fixed"}}
-          onClick={()=>{
-            setAsson(50)}}
-        >
+       
           <Assistant  setAsson={setAsson}/>
-        </div>
+         
 
         {/* Social links */}
         <div
@@ -230,8 +225,8 @@ function App() {
           }}
         >
           <Social />
-        </div>
-
+      
+</div>
         {/* Welcome message */}
         <div
           className="welcome"
