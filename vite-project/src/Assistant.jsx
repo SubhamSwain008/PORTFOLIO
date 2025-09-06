@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import ani from "../src/assets/ass.gif"
 import axios from "axios";
 import GradientText from "../pre/GradientText/GradientText";
 
@@ -269,10 +270,9 @@ export default function Assistant({ setAsson }) {
             }
             `}
           </style>
-          <DotLottieReact
-            src="../src/assets/ass.json"
-            loop
-            autoplay
+          <img
+            src={ani}
+           
             style={{ width: "100%", height: "100%" }}
           />
         </button>
