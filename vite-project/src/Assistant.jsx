@@ -158,9 +158,10 @@ export default function Assistant({ setAsson }) {
                       margin: "0.5em 0",
                       padding: "0.8em",
                       boxShadow: "0 0 12px rgba(139,92,246,0.5)",
+                    
                     }}
                   >
-                    <p style={{ color: "#E0E0E0", fontSize: "0.85rem" }}>
+                    <p style={{ color: "#E0E0E0", fontSize: "1.2rem" }}>
                       <span
                         style={{ color: "#EC4899", fontWeight: "bold" }}
                       >
@@ -168,7 +169,7 @@ export default function Assistant({ setAsson }) {
                       </span>{" "}
                       {msges[msgIdx]}
                     </p>
-                    <p style={{ color: "#FACC15", fontSize: "0.85rem" }}>
+                    <p style={{ color: "#FACC15", fontSize: "1.2rem" }}>
                       <span
                         style={{ color: "#A78BFA", fontWeight: "bold" }}
                       >
