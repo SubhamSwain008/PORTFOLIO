@@ -35,7 +35,7 @@ export default function Assistant({ setAsson }) {
   async function getData() {
     try {
       setMesges((prev) => [...prev, query]);
-      const send = await axios.put("http://127.0.0.1:8000/msg", { msg: query });
+      const send = await axios.put("https://portfolio-backend-l6tl.onrender.com/msg", { msg: query });
       setReplies((prev) => [...prev, send.data.gemini]);
       setcansend(true);
     } catch (e) {

@@ -22,7 +22,7 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      const tok = await axios.get("http://127.0.0.1:8000/");
+      const tok = await axios.get("https://portfolio-backend-l6tl.onrender.com/");
       setToken(tok.data.Hello);
     })();
   }, []);

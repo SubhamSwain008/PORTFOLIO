@@ -15,7 +15,7 @@ token=os.getenv("GIT_TOKENS","not found")
 app = FastAPI()
 
 origins = [
-    f"http://localhost:{port}",
+    # f"http://localhost:{port}",
     "https://portfolio-793k.onrender.com/"
 ]
 
