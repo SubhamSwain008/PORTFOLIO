@@ -16,7 +16,8 @@ app = FastAPI()
 
 origins = [
     f"http://localhost:{port}",
-    "https://portfolio-793k.onrender.com/"
+    "https://portfolio-793k.onrender.com"
+   
 ]
 
 app.add_middleware(
