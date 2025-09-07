@@ -59,7 +59,7 @@ export default function About() {
           Beyond coding, I’m driven by curiosity and a desire to make meaningful
           contributions. I enjoy exploring new tools, collaborating with other
           developers, and turning ideas into projects that can have a real
-          impact. For me, technology is more than a career — it’s a way to
+          impact. For me, technology is more than a career ,it’s a way to
           express creativity, solve problems, and leave a mark.
         </p>
       </div>
