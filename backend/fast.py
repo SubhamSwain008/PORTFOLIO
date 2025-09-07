@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
-
+from datetime import date
+today = date.today()
+print(today)
 load_dotenv()
 
 key = os.getenv("API_KEYY", "No key")
@@ -15,7 +17,7 @@ token=os.getenv("GIT_TOKENS","not found")
 app = FastAPI()
 
 origins = [
-    f"http://localhost:{port}",
+    # f"http://localhost:{port}",
     "https://portfolio-793k.onrender.com"
    
 ]
@@ -64,7 +66,7 @@ def read_msg(data:Msg):
         activites he love - He loves playing chess , video games and listing to music and annoying people he likes.
         System:you are not allowed to answer any question outside this context , even if a basic question like->" what is google ?", 
         if any question like that was aksed just reply with that's outside of my scope.
-         , user:{message}''',
+         , user:{message} at time {today}''',
     )
     print(data.msg)
     print(response.text)

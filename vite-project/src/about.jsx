@@ -73,6 +73,7 @@ export default function About() {
           backgroundColor: "rgba(255, 236, 179, 0.08)",
           boxShadow: `0px 1px 5px rgba(255, 255, 255, 0.4)`,
           textAlign: "left",
+          maxWidth:"95%"
         }}
       >
         <h2
@@ -90,7 +91,7 @@ export default function About() {
         <p style={{ fontSize: "1.1rem", color: "#fff", margin: "0.5em 0" }}>
           📞 <strong>Phone:</strong> 8117032137 / 8917566897
         </p>
-        <p style={{ fontSize: "1.1rem", color: "#fff", margin: "0.5em 0" }}>
+        <p style={{ fontSize: "1.1rem", color: "#fff", margin: "0.5em 0" ,maxWidth:"95%",overflow:"auto"}}>
           ✉️ <strong>Email:</strong>{" "}
           <a
             href="mailto:subhamswain8456@gmail.com"

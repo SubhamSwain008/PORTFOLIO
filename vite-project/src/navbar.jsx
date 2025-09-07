@@ -35,7 +35,9 @@ export default function NavBar({
         /* Tablet */
         @media (max-width: 1024px) {
           .navbar {
-            font-size: 180% !important;
+            position: "fixed",
+            top: "0px",
+            font-size: 150% !important;
           }
         }
 
