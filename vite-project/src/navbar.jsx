@@ -35,8 +35,8 @@ export default function NavBar({
         /* Tablet */
         @media (max-width: 1024px) {
           .navbar {
-            position: "fixed",
-            top: "0px",
+            position: relative !important;
+          
             font-size: 150% !important;
           }
         }
@@ -44,13 +44,15 @@ export default function NavBar({
         /* Mobile */
         @media (max-width: 768px) {
           .navbar {
-            position: "fixed",
-            top: "0px",
+           position: relative !important;
+            
+
             flex-direction: column !important;
-            gap: 0.5em !important;
-            font-size: 140% !important;
-            padding: 0.5em !important;
+            gap: 0.2em !important;
+            font-size: 150% !important;
+            padding: .1em !important;
           }
+        
         }
       `}
       </style>
@@ -111,7 +113,7 @@ export default function NavBar({
           showBorder={false}
           className="custom-class"
         >
-          Work experience
+          experience
         </GradientText>
       </div>
 
@@ -127,7 +129,7 @@ export default function NavBar({
             target="_blank"
             rel="noopener noreferrer"
           >
-            CV
+            Curriculum Vitae
           </a>
         </GradientText>
       </div>
