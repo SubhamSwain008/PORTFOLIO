@@ -42,9 +42,11 @@ export default function NavBar({
         /* Mobile */
         @media (max-width: 768px) {
           .navbar {
+            position: "fixed",
+            top: "0px",
             flex-direction: column !important;
             gap: 0.5em !important;
-            font-size: 130% !important;
+            font-size: 140% !important;
             padding: 0.5em !important;
           }
         }
