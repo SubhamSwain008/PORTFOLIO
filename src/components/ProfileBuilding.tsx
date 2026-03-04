@@ -2,6 +2,8 @@
 
 import * as THREE from "three";
 
+import { useTexture } from "@react-three/drei";
+
 export default function ProfileBuilding() {
   const WIDTH = 8;
   const DEPTH = 8;
@@ -9,6 +11,10 @@ export default function ProfileBuilding() {
   const WALL_THICKNESS = 0.5;
   const DOOR_WIDTH = 2;
   const DOOR_HEIGHT = 4;
+
+  const doorTex = useTexture("/assets/door.png");
+  doorTex.magFilter = THREE.NearestFilter;
+  doorTex.minFilter = THREE.NearestFilter;
 
   // Dark charcoal stone — NOT black, with blue undertone
   const stoneMaterial = new THREE.MeshStandardMaterial({
@@ -29,15 +35,6 @@ export default function ProfileBuilding() {
     color: "#1e1a22",
     roughness: 0.85,
     metalness: 0.08,
-  });
-
-  // Doorway interior — emissive dark red glow
-  const doorwayMaterial = new THREE.MeshStandardMaterial({
-    color: "#100810",
-    emissive: "#3a0b0b",
-    emissiveIntensity: 0.95,
-    roughness: 1,
-    metalness: 0,
   });
 
   return (
@@ -74,12 +71,16 @@ export default function ProfileBuilding() {
         </mesh>
       ))}
 
-      {/* Doorway indentation (front face, z = DEPTH/2) */}
-      <mesh
-        position={[0, DOOR_HEIGHT / 2, DEPTH / 2 + 0.01]}
-        material={doorwayMaterial}
-      >
-        <boxGeometry args={[DOOR_WIDTH, DOOR_HEIGHT, WALL_THICKNESS]} />
+      {/* Doorway frame backing */}
+      <mesh position={[0, DOOR_HEIGHT / 2 + 0.1, DEPTH / 2 + 0.01]}>
+        <boxGeometry args={[DOOR_WIDTH, DOOR_HEIGHT + 0.2, 0.3]} />
+        <meshStandardMaterial color="#1a1614" emissive="#2a1a10" emissiveIntensity={0.2} roughness={0.9} />
+      </mesh>
+
+      {/* Doorway image plane */}
+      <mesh position={[0, DOOR_HEIGHT / 2 + 0.05, DEPTH / 2 + 0.17]}>
+        <planeGeometry args={[1.65, 3.4]} />
+        <meshStandardMaterial map={doorTex} transparent roughness={0.85} metalness={0.05} />
       </mesh>
 
       {/* Side accent strips — lighter edges for definition */}

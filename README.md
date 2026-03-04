@@ -1,8 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 3D Interactive Portfolio
 
-## Getting Started
+A unique, web-based 3D interactive portfolio built with Next.js, React, Three.js, and React Three Fiber. This project seamlessly blends an outdoor exploration experience with a claustrophobic, horror-themed interior showcase, providing an immersive journey without any page reloads.
 
-First, run the development server:
+## 🌟 Key Features
+
+### 1. Seamless Multi-Environment World
+- **The Exterior (World):** A lonely, open-ended 3D environment featuring low-poly leafy trees, rocks, a white picket fence perimeter, and a central Profile Building. Players can explore freely, enjoying an atmospheric, quiet setting.
+- **The Interior (Horror Showcase):** Entering the Profile Building transitions the game into a tight, dark, and scary 2D-style environment. Characterized by blood-red lighting, screen shakes, flickering candles, and creeping dread.
+
+### 2. Immersive Horror Elements
+The interior is packed with terrifying details to flip the tone entirely:
+- **Atmospheric Props:** Floating dust particles, blood drips, cobwebs, and a creepy wall candle sconce.
+- **Pixelated Low-Poly Furniture:** Blocky, retro-horror-styled tables, chairs, bookshelves, barrels, and a skull centerpiece.
+- **Multi-floor Design:** A staircase connects a ground floor and an upper floor, adding depth to the constrained space.
+- **"Death Screen" / Glitching Stats:** A bloody, broken UI overlay imitating a survival horror game with glitching, blood-red stat bars.
+
+### 3. Advanced State Management & Transitions
+- **`useGameStore`:** A global singleton store (Zustand-like, using `useSyncExternalStore`) that manages the smooth transition of `GameMode` between "explore" (outside), "transitioning-in", "interior", and "transitioning-out".
+- **Diegetic Prompts:** Approaching the building reveals an organic entrance prompt ("E to Enter"), bridging the gap between exploration and action seamlessly.
+- **Camera Controller:** Dynamically snaps from an open-world third-person view to a tight, screen-filling orthographic view depending on the player's location.
+
+### 4. Custom Player Controls
+- **`Player.tsx`:** Handles character movement and collision physics. Out in the exterior world, it relies on broad exploration movement; inside, the controls switch to match the heavy, confined nature of the horror environment.
+
+## 🚀 Tech Stack
+
+- **Framework:** Next.js (App Router), React 19
+- **3D Rendering:** Three.js, React Three Fiber (@react-three/fiber), React Three Drei (@react-three/drei)
+- **Styling:** Tailwind CSS V4
+- **Language:** TypeScript
+
+## 🎮 Getting Started
+
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -14,23 +50,15 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to explore the portfolio.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📂 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/components/World.tsx`: Renders the outdoor exploration area, fences, trees, and ground.
+- `src/components/InteriorWorld.tsx`: Contains the massive horror-themed interior, complete with pixelated props, particle effects, and multi-floor logic.
+- `src/components/Player.tsx` & `CameraController.tsx`: The core logic for player movement and camera framing, adapting smoothly between exterior and interior modes.
+- `src/components/useGameStore.ts`: Handles global state, specifically tracking the player's transition progress, current floor, and proximity to interactive objects.
 
-## Learn More
+## 🛠️ Modifying the Scene
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+You can start editing the world by modifying `src/app/page.tsx` or diving straight into the environment components in `src/components/`. 

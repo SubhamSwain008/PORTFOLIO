@@ -1,36 +1,53 @@
 "use client";
 
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 
 interface CameraControllerProps {
-  playerPosition: THREE.Vector3;
+  targetRef: React.MutableRefObject<THREE.Vector3>;
 }
 
-export default function CameraController({ playerPosition }: CameraControllerProps) {
+export default function CameraController({
+  targetRef,
+}: CameraControllerProps) {
+  const camRef = useRef<THREE.PerspectiveCamera>(null!);
   const offset = useRef(new THREE.Vector3(0, 14, 14));
   const targetPosition = useRef(new THREE.Vector3());
-  const lookAtTarget = useRef(new THREE.Vector3());
+  const targetLookAt = useRef(new THREE.Vector3());
+  const currentLookAt = useRef(new THREE.Vector3());
 
-  useFrame(({ camera }) => {
+  useFrame(() => {
+    if (!camRef.current) return;
+
+    const pos = targetRef.current;
+
     // Target camera position = player position + fixed offset
     targetPosition.current.set(
-      playerPosition.x + offset.current.x,
+      pos.x + offset.current.x,
       offset.current.y,
-      playerPosition.z + offset.current.z
+      pos.z + offset.current.z
     );
 
-    // Smooth lerp follow
-    camera.position.lerp(targetPosition.current, 0.05);
+    // Smooth lerp follow — low values = smoother, less shake
+    camRef.current.position.lerp(targetPosition.current, 0.03);
 
-    // Smooth look-at
-    lookAtTarget.current.set(playerPosition.x, 0, playerPosition.z);
-    const currentLookAt = new THREE.Vector3();
-    camera.getWorldDirection(currentLookAt);
+    // Smooth look-at — dampened to avoid jitter
+    targetLookAt.current.set(pos.x, 0, pos.z);
+    currentLookAt.current.lerp(targetLookAt.current, 0.04);
 
-    camera.lookAt(lookAtTarget.current);
+    camRef.current.lookAt(currentLookAt.current);
   });
 
-  return null;
+  return (
+    <PerspectiveCamera
+      ref={camRef}
+      makeDefault
+      fov={48}
+      near={0.1}
+      far={200}
+      position={[0, 14, 18]}
+    />
+  );
 }

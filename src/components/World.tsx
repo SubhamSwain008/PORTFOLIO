@@ -2,32 +2,104 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
 import ProfileBuilding from "./ProfileBuilding";
+import { ENV_PROPS } from "../lib/environment";
 
-// Sparse dead tree
-function DeadTree({ position }: { position: [number, number, number] }) {
+// Enhanced low-poly leafy tree with variants
+function LeafyTree({
+  position,
+  scale = 1,
+  variant = 0,
+}: {
+  position: [number, number, number];
+  scale?: number;
+  variant?: number;
+}) {
+  const configs = [
+    { color: "#1a2a20", shape: "sphere", height: 2.0, radius: 1.2 },
+    { color: "#15241d", shape: "cone", height: 2.8, radius: 1.1 },
+    { color: "#362217", shape: "sphere", height: 1.8, radius: 1.4 },
+    { color: "#232e2a", shape: "sphere", height: 2.4, radius: 1.0 },
+    { color: "#272e1c", shape: "cone", height: 2.2, radius: 1.3 },
+  ];
+
+  const conf = configs[variant % configs.length];
+
+  const leafMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(conf.color).offsetHSL(
+          (variant % 3) * 0.01,
+          0,
+          (variant % 2) * 0.03
+        ),
+        roughness: 0.85,
+        metalness: 0.04,
+        flatShading: true,
+      }),
+    [conf.color, variant]
+  );
+
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       {/* Trunk */}
-      <mesh position={[0, 1.2, 0]} castShadow>
-        <cylinderGeometry args={[0.08, 0.15, 2.4, 5]} />
-        <meshStandardMaterial color="#302820" roughness={0.95} metalness={0.02} />
+      <mesh position={[0, conf.height / 2, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.18, conf.height, 6]} />
+        <meshStandardMaterial
+          color="#2d241c"
+          roughness={0.9}
+          metalness={0}
+          flatShading
+        />
       </mesh>
-      {/* Branch 1 */}
-      <mesh position={[0.3, 2.0, 0]} rotation={[0, 0, 0.8]} castShadow>
-        <cylinderGeometry args={[0.03, 0.06, 1.0, 4]} />
-        <meshStandardMaterial color="#302820" roughness={0.95} metalness={0.02} />
+
+      {/* Main canopy */}
+      <mesh
+        position={[
+          0,
+          conf.shape === "cone"
+            ? conf.height + conf.radius
+            : conf.height + conf.radius / 1.6,
+          0,
+        ]}
+        castShadow
+      >
+        {conf.shape === "sphere" ? (
+          <icosahedronGeometry args={[conf.radius, 1]} />
+        ) : (
+          <coneGeometry args={[conf.radius, conf.radius * 2.1, 6]} />
+        )}
+        <primitive object={leafMaterial} attach="material" />
       </mesh>
-      {/* Branch 2 */}
-      <mesh position={[-0.2, 1.8, 0.1]} rotation={[0.3, 0, -0.6]} castShadow>
-        <cylinderGeometry args={[0.03, 0.05, 0.8, 4]} />
-        <meshStandardMaterial color="#302820" roughness={0.95} metalness={0.02} />
-      </mesh>
-      {/* Branch 3 */}
-      <mesh position={[0.1, 2.3, -0.15]} rotation={[0.4, 0.5, 0.3]} castShadow>
-        <cylinderGeometry args={[0.02, 0.04, 0.6, 4]} />
-        <meshStandardMaterial color="#302820" roughness={0.95} metalness={0.02} />
-      </mesh>
+
+      {/* Extra foliage clusters for sphere trees */}
+      {conf.shape === "sphere" && (
+        <>
+          <mesh position={[0.4, conf.height + conf.radius * 0.9, 0.2]} castShadow>
+            <icosahedronGeometry args={[conf.radius * 0.55, 0]} />
+            <primitive object={leafMaterial} attach="material" />
+          </mesh>
+
+          <mesh position={[-0.35, conf.height + conf.radius * 0.8, -0.25]} castShadow>
+            <icosahedronGeometry args={[conf.radius * 0.45, 0]} />
+            <primitive object={leafMaterial} attach="material" />
+          </mesh>
+
+          <mesh position={[0.15, conf.height + conf.radius * 1.1, -0.35]} castShadow>
+            <icosahedronGeometry args={[conf.radius * 0.35, 0]} />
+            <primitive object={leafMaterial} attach="material" />
+          </mesh>
+        </>
+      )}
+
+      {/* Secondary cone layer for pine variants */}
+      {conf.shape === "cone" && (
+        <mesh position={[0, conf.height + conf.radius * 0.6, 0]} castShadow>
+          <coneGeometry args={[conf.radius * 0.75, conf.radius * 1.4, 6]} />
+          <primitive object={leafMaterial} attach="material" />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -53,100 +125,208 @@ function Rock({
   );
 }
 
-export default function World() {
-  // Generate sparse environmental props
-  const props = useMemo(() => {
-    const items: { type: "tree" | "rock"; pos: [number, number, number]; scale?: number }[] = [];
-    const rng = (seed: number) => {
-      let s = seed;
-      return () => {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    };
-    const random = rng(42);
+// Greyish picket fence segment
+function FenceSegment({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
+  const picketCount = 12;
+  const segmentWidth = 4;
+  const spacing = segmentWidth / picketCount;
 
-    // Sparse dead trees
-    const treePositions: [number, number, number][] = [
-      [-18, 0, -12],
-      [15, 0, -20],
-      [-22, 0, 10],
-      [20, 0, 18],
-      [-10, 0, -22],
-      [25, 0, -5],
-      [-14, 0, 20],
-      [8, 0, -18],
-    ];
-    treePositions.forEach((pos) => items.push({ type: "tree", pos }));
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Top rail */}
+      <mesh position={[0, 0.8, 0]}>
+        <boxGeometry args={[segmentWidth, 0.06, 0.04]} />
+        <meshStandardMaterial color="#7a7c80" roughness={0.7} metalness={0.02} />
+      </mesh>
+      {/* Bottom rail */}
+      <mesh position={[0, 0.35, 0]}>
+        <boxGeometry args={[segmentWidth, 0.06, 0.04]} />
+        <meshStandardMaterial color="#7a7c80" roughness={0.7} metalness={0.02} />
+      </mesh>
+      {/* Pickets */}
+      {Array.from({ length: picketCount }, (_, i) => {
+        const x = -segmentWidth / 2 + spacing / 2 + i * spacing;
+        const height = 0.9 + (i % 3 === 0 ? 0.12 : 0); // varied heights
+        return (
+          <mesh key={i} position={[x, height / 2, 0]}>
+            <boxGeometry args={[0.08, height, 0.03]} />
+            <meshStandardMaterial color="#6b6d73" roughness={0.75} metalness={0.02} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
 
-    // Scattered rocks
-    for (let i = 0; i < 20; i++) {
-      const x = (random() - 0.5) * 56;
-      const z = (random() - 0.5) * 56;
-      // Don't place too close to center building
-      if (Math.abs(x) < 6 && Math.abs(z) < 6) continue;
-      const scale = 0.5 + random() * 1.2;
-      items.push({ type: "rock", pos: [x, scale * 0.15, z], scale });
-    }
-
-    return items;
-  }, []);
+function FencePerimeter() {
+  const halfSize = 29; // slightly inside 60/2=30
+  const segmentWidth = 4;
+  const segments = Math.ceil((halfSize * 2) / segmentWidth);
 
   return (
     <group>
-      {/* Ground Plane — dark muted brown/blue-grey, NOT black */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        receiveShadow
-      >
+      {/* North fence (back) */}
+      {Array.from({ length: segments }, (_, i) => (
+        <FenceSegment
+          key={`n${i}`}
+          position={[-halfSize + segmentWidth / 2 + i * segmentWidth, 0, -halfSize]}
+        />
+      ))}
+      {/* South fence (front) */}
+      {Array.from({ length: segments }, (_, i) => (
+        <FenceSegment
+          key={`s${i}`}
+          position={[-halfSize + segmentWidth / 2 + i * segmentWidth, 0, halfSize]}
+        />
+      ))}
+      {/* West fence (left) */}
+      {Array.from({ length: segments }, (_, i) => (
+        <FenceSegment
+          key={`w${i}`}
+          position={[-halfSize, 0, -halfSize + segmentWidth / 2 + i * segmentWidth]}
+          rotation={[0, Math.PI / 2, 0]}
+        />
+      ))}
+      {/* East fence (right) */}
+      {Array.from({ length: segments }, (_, i) => (
+        <FenceSegment
+          key={`e${i}`}
+          position={[halfSize, 0, -halfSize + segmentWidth / 2 + i * segmentWidth]}
+          rotation={[0, Math.PI / 2, 0]}
+        />
+      ))}
+    </group>
+  );
+}
+
+export default function World() {
+  const props = ENV_PROPS;
+
+  const grassTexture = useTexture("/assets/grass.png");
+
+  // Clone textures with appropriate repetitions for the different sized planes
+  // to ensure consistent visual scaling of the grass.
+  const texBase = useMemo(() => {
+    const t = grassTexture.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 4); // 60x60 plane
+    t.needsUpdate = true;
+    return t;
+  }, [grassTexture]);
+
+  const texInner = useMemo(() => {
+    const t = grassTexture.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 4); // 30x30 plane
+    t.needsUpdate = true;
+    return t;
+  }, [grassTexture]);
+
+  const texBuilding = useMemo(() => {
+    const t = grassTexture.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(5.6, 5.6); // 14x14 plane
+    t.needsUpdate = true;
+    return t;
+  }, [grassTexture]);
+
+  const texOuter = useMemo(() => {
+    const t = grassTexture.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    // Keep the same ratio as 4 repeats per 60 units -> (400 / 60) * 4 = 26.666
+    t.repeat.set(400 / 15, 400 / 15);
+    t.needsUpdate = true;
+    return t;
+  }, [grassTexture]);
+
+  return (
+    <group>
+      {/* Outer ground (extends to camera horizon) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+        <planeGeometry args={[400, 400]} />
+        <meshStandardMaterial
+          map={texOuter}
+          color="#b8b8b8ff"
+          roughness={0.88}
+          metalness={0.06}
+        />
+      </mesh>
+      {/* Ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
         <meshStandardMaterial
-          color="#1a1820"
+          map={texBase}
+          color="#b8b8b8ff"
           roughness={0.88}
           metalness={0.06}
         />
       </mesh>
 
-      {/* Inner ground area — slightly different tone, worn stone feel */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.01, 0]}
-        receiveShadow
-      >
+      {/* Inner ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow>
         <planeGeometry args={[30, 30]} />
         <meshStandardMaterial
-          color="#201c26"
+          map={texInner}
+          color="#c5c5c5ff"
           roughness={0.82}
           metalness={0.08}
         />
       </mesh>
 
-      {/* Paved area around building — lighter, deliberate */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.02, 0]}
-        receiveShadow
-      >
+      {/* Building area */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
         <planeGeometry args={[14, 14]} />
         <meshStandardMaterial
-          color="#28242e"
+          map={texBuilding}
+          color="#aaaaaa"
           roughness={0.78}
           metalness={0.1}
         />
       </mesh>
 
-      {/* Profile Building (center of world) */}
+      {/* Building */}
       <ProfileBuilding />
 
-      {/* Environmental props */}
+      {/* White Picket Fence around perimeter */}
+      <FencePerimeter />
+
+      {/* Environment */}
       {props.map((item, i) =>
         item.type === "tree" ? (
-          <DeadTree key={`tree-${i}`} position={item.pos} />
+          <LeafyTree
+            key={`tree-${i}`}
+            position={item.pos}
+            scale={item.scale}
+            variant={item.variant}
+          />
         ) : (
           <Rock key={`rock-${i}`} position={item.pos} scale={item.scale} />
         )
       )}
+
+      {/* ─── Back Fence Portal Gateway ─── */}
+      <group position={[0, 0, -28.9]}>
+        {/* Portal Frame */}
+        <mesh position={[0, 2.1, 0.1]}>
+          <boxGeometry args={[3.5, 4.5, 0.4]} />
+          <meshStandardMaterial color="#0a0515" emissive="#1a0a30" emissiveIntensity={0.6} roughness={0.7} />
+        </mesh>
+
+        {/* Portal Inner Void */}
+        <mesh position={[0, 2, 0.2]}>
+          <planeGeometry args={[3.1, 4.3]} />
+          <meshBasicMaterial color="#000000" />
+        </mesh>
+
+        {/* Portal Light */}
+        <pointLight
+          position={[0, 3, 1]}
+          color="#6a3a9a"
+          intensity={5}
+          distance={15}
+          decay={2}
+        />
+      </group>
     </group>
   );
 }
