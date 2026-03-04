@@ -3,6 +3,7 @@
 import * as THREE from "three";
 
 import { useTexture } from "@react-three/drei";
+import WallCandle from "./WallCandle";
 
 export default function ProfileBuilding() {
   const WIDTH = 8;
@@ -16,23 +17,33 @@ export default function ProfileBuilding() {
   doorTex.magFilter = THREE.NearestFilter;
   doorTex.minFilter = THREE.NearestFilter;
 
+  const brickWallTex = useTexture("/assets/brickWall.png");
+  brickWallTex.wrapS = THREE.RepeatWrapping;
+  brickWallTex.wrapT = THREE.RepeatWrapping;
+  brickWallTex.repeat.set(2, 3);
+  brickWallTex.magFilter = THREE.NearestFilter;
+  brickWallTex.minFilter = THREE.NearestFilter;
+
   // Dark charcoal stone — NOT black, with blue undertone
   const stoneMaterial = new THREE.MeshStandardMaterial({
-    color: "#2a252e",
+    color: "#6b6170", // lightened to let texture show
+    map: brickWallTex,
     roughness: 0.8,
     metalness: 0.1,
   });
 
   // Slightly lighter stone for edges / variation
   const stoneVariant = new THREE.MeshStandardMaterial({
-    color: "#352e35",
+    color: "#7a6f7a",
+    map: brickWallTex,
     roughness: 0.75,
     metalness: 0.12,
   });
 
   // Darkest stone for deep recesses
   const stoneDeep = new THREE.MeshStandardMaterial({
-    color: "#1e1a22",
+    color: "#4a404f",
+    map: brickWallTex,
     roughness: 0.85,
     metalness: 0.08,
   });
@@ -126,6 +137,35 @@ export default function ProfileBuilding() {
       >
         <coneGeometry args={[1.8, 1.5, 4]} />
       </mesh>
+
+      {/* Mysterious Candles on Exterior Walls */}
+      <group position={[0, 0, 0]}>
+        {/* Front wall - outside the door */}
+        <WallCandle position={[-2.5, 2.8, DEPTH / 2 + 0.04]} delay={0.2} />
+        <WallCandle position={[2.5, 2.8, DEPTH / 2 + 0.04]} delay={1.5} />
+        {/* <WallCandle position={[-3.6, 5.5, DEPTH / 2 + 0.04]} delay={0.8} />
+        <WallCandle position={[3.6, 5.5, DEPTH / 2 + 0.04]} delay={2.1} /> */}
+
+        {/* Left wall */}
+        {/* <group rotation={[0, -Math.PI / 2, 0]}>
+          <WallCandle position={[0, 3.5, WIDTH / 2 + 0.04]} delay={1.1} />
+          <WallCandle position={[-2.5, 6.5, WIDTH / 2 + 0.04]} delay={2.5} />
+          <WallCandle position={[2.5, 6.5, WIDTH / 2 + 0.04]} delay={0.5} />
+        </group> */}
+
+        {/* Right wall */}
+        {/* <group rotation={[0, Math.PI / 2, 0]}>
+          <WallCandle position={[0, 3.5, WIDTH / 2 + 0.04]} delay={0.7} />
+          <WallCandle position={[-2.5, 6.5, WIDTH / 2 + 0.04]} delay={1.8} />
+          <WallCandle position={[2.5, 6.5, WIDTH / 2 + 0.04]} delay={2.9} />
+        </group> */}
+
+        {/* Back wall */}
+        {/* <group rotation={[0, Math.PI, 0]}>
+          <WallCandle position={[-2, 4.5, DEPTH / 2 + 0.04]} delay={0.4} />
+          <WallCandle position={[2, 4.5, DEPTH / 2 + 0.04]} delay={1.9} />
+        </group> */}
+      </group>
 
       {/* Warm torchlight near entrance — boosted for readability */}
       <pointLight

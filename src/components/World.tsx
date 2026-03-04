@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { useTexture } from "@react-three/drei";
+import { useTexture, useVideoTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import ProfileBuilding from "./ProfileBuilding";
 import { ENV_PROPS } from "../lib/environment";
 
@@ -26,6 +27,16 @@ function LeafyTree({
 
   const conf = configs[variant % configs.length];
 
+  const leafTex = useTexture("/assets/leaf.png");
+  leafTex.wrapS = THREE.RepeatWrapping;
+  leafTex.wrapT = THREE.RepeatWrapping;
+  // Repeat to make the leaf texture fit nicely on the low-poly shapes
+  leafTex.repeat.set(4, 4);
+  leafTex.magFilter = THREE.NearestFilter;
+  leafTex.minFilter = THREE.NearestFilter;
+  // Update texture needsUpdate
+  leafTex.needsUpdate = true;
+
   const leafMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -34,11 +45,12 @@ function LeafyTree({
           0,
           (variant % 2) * 0.03
         ),
+        map: leafTex,
         roughness: 0.85,
         metalness: 0.04,
         flatShading: true,
       }),
-    [conf.color, variant]
+    [conf.color, variant, leafTex]
   );
 
   return (
@@ -199,10 +211,18 @@ function FencePerimeter() {
   );
 }
 
+// The PortalGateway video component has been removed in favor of a static image texture.
+
 export default function World() {
   const props = ENV_PROPS;
 
   const grassTexture = useTexture("/assets/grass.png");
+  const portalVideo = useVideoTexture("/assets/portal.mp4", {
+    muted: true,
+    loop: true,
+    start: true,
+    crossOrigin: "anonymous",
+  });
 
   // Clone textures with appropriate repetitions for the different sized planes
   // to ensure consistent visual scaling of the grass.
@@ -306,16 +326,16 @@ export default function World() {
 
       {/* ─── Back Fence Portal Gateway ─── */}
       <group position={[0, 0, -28.9]}>
-        {/* Portal Frame */}
+        {/* Portal Frame / Backing */}
         <mesh position={[0, 2.1, 0.1]}>
-          <boxGeometry args={[3.5, 4.5, 0.4]} />
-          <meshStandardMaterial color="#0a0515" emissive="#1a0a30" emissiveIntensity={0.6} roughness={0.7} />
+          <boxGeometry args={[3.1, 4.3, 0.4]} />
+          <meshStandardMaterial color="#0a0515" emissive="#0a0515" emissiveIntensity={0.2} roughness={0.9} />
         </mesh>
 
-        {/* Portal Inner Void */}
-        <mesh position={[0, 2, 0.2]}>
+        {/* Portal Inner Void — video texture */}
+        <mesh position={[0, 2.1, 0.31]}>
           <planeGeometry args={[3.1, 4.3]} />
-          <meshBasicMaterial color="#000000" />
+          <meshBasicMaterial map={portalVideo} color="#ffffff" toneMapped={false} />
         </mesh>
 
         {/* Portal Light */}
