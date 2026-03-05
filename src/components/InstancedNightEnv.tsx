@@ -221,7 +221,7 @@ export function InstancedRocks({ items }: { items: EnvItem[] }) {
 }
 
 export function InstancedFencePerimeter() {
-    const halfSize = 29;
+    const halfSize = 45;
     const segmentWidth = 4;
     const segments = Math.ceil((halfSize * 2) / segmentWidth);
     const gateHalfWidth = 4; // 8-unit wide gate opening on each side

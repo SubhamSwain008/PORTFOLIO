@@ -16,16 +16,16 @@ function generateDayEnvironment(): EnvItem[] {
     const random = rng(137);
 
     // Trees — more spread out, different positions
-    for (let i = 0; i < 300; i++) {
-        const x = (random() - 0.5) * 140;
-        const z = (random() - 0.5) * 140;
+    for (let i = 0; i < 500; i++) {
+        const x = (random() - 0.5) * 440;
+        const z = (random() - 0.5) * 440;
 
         // Keep center clear for building
         if (Math.abs(x) < 7 && Math.abs(z) < 7) continue;
 
         // Keep portal area clear (portal at x=-10, z=-28.9)
         const dxP = x - (-10);
-        const dzP = z - (-28.9);
+        const dzP = z - (-44.9);
         if (dxP * dxP + dzP * dzP < 36) continue;
 
         const scale = 0.7 + random() * 1.1;
@@ -40,15 +40,15 @@ function generateDayEnvironment(): EnvItem[] {
     }
 
     // Rocks — different scattering
-    for (let i = 0; i < 150; i++) {
-        const x = (random() - 0.5) * 138;
-        const z = (random() - 0.5) * 138;
+    for (let i = 0; i < 300; i++) {
+        const x = (random() - 0.5) * 440;
+        const z = (random() - 0.5) * 440;
 
         if (Math.abs(x) < 6 && Math.abs(z) < 6) continue;
 
         // Keep portal area clear
         const dxP = x - (-10);
-        const dzP = z - (-28.9);
+        const dzP = z - (-44.9);
         if (dxP * dxP + dzP * dzP < 36) continue;
 
         const scale = 0.4 + random() * 1.0;

@@ -7,6 +7,7 @@ import * as THREE from "three";
 import DayWorld from "./DayWorld";
 import DayPlayer from "./DayPlayer";
 import CameraController from "../CameraController";
+import BoundaryDialogue from "../BoundaryDialogue";
 
 // ─── Daytime Fog ───
 function DayFogManager() {
@@ -29,7 +30,7 @@ function DayPortalPrompt({ visible }: { visible: boolean }) {
     const titleRef = useRef<THREE.Mesh>(null!);
     const opacity = useRef(0);
     const time = useRef(0);
-    const PORTAL_Z = -28.9;
+    const PORTAL_Z = -44.9;
 
     useFrame((_, delta) => {
         time.current += delta;
@@ -92,10 +93,10 @@ function DayPortalPrompt({ visible }: { visible: boolean }) {
 
 // ─── Gate Prompt for Day world ───
 const DAY_GATE_POSITIONS: [number, number, number][] = [
-    [0, 2.2, -29],
-    [0, 2.2, 29],
-    [-29, 2.2, 0],
-    [29, 2.2, 0],
+    [0, 2.2, -45],
+    [0, 2.2, 45],
+    [-45, 2.2, 0],
+    [45, 2.2, 0],
 ];
 
 function SingleDayGatePrompt({
@@ -279,6 +280,9 @@ export default function DayScene() {
 
                         {/* Gate prompt */}
                         <DayGatePrompt visible={isNearGate} playerPosRef={playerPosRef} />
+
+                        {/* Boundary dialogue */}
+                        <BoundaryDialogue playerPosRef={playerPosRef} color="#2a3a2a" />
 
                         {/* Player — no flashlight */}
                         <DayPlayer

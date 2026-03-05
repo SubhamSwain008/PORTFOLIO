@@ -68,15 +68,15 @@ export default function Player({ positionRef, keys }: PlayerProps) {
   // Door position (front face of building)
   const DOOR_POS = new THREE.Vector3(0, 0, 4.5);
   // Portal Door position (back face fence)
-  const PORTAL_POS = new THREE.Vector3(-10, 0, -28.9);
+  const PORTAL_POS = new THREE.Vector3(-10, 0, -44.9);
   const ENTRANCE_RADIUS = 4;
 
   // ─── Fence gate positions (center of each side) ───
   const GATE_POSITIONS = [
-    { pos: new THREE.Vector3(0, 0, -29), dir: new THREE.Vector3(0, 0, -1), axis: "z" as const },  // North
-    { pos: new THREE.Vector3(0, 0, 29), dir: new THREE.Vector3(0, 0, 1), axis: "z" as const },   // South
-    { pos: new THREE.Vector3(-29, 0, 0), dir: new THREE.Vector3(-1, 0, 0), axis: "x" as const }, // West
-    { pos: new THREE.Vector3(29, 0, 0), dir: new THREE.Vector3(1, 0, 0), axis: "x" as const },   // East
+    { pos: new THREE.Vector3(0, 0, -45), dir: new THREE.Vector3(0, 0, -1), axis: "z" as const },  // North
+    { pos: new THREE.Vector3(0, 0, 45), dir: new THREE.Vector3(0, 0, 1), axis: "z" as const },   // South
+    { pos: new THREE.Vector3(-45, 0, 0), dir: new THREE.Vector3(-1, 0, 0), axis: "x" as const }, // West
+    { pos: new THREE.Vector3(45, 0, 0), dir: new THREE.Vector3(1, 0, 0), axis: "x" as const },   // East
   ];
   const GATE_DETECT_RADIUS = 4;
   const gateCrossingTarget = useRef<THREE.Vector3 | null>(null);
@@ -218,7 +218,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     const nextX = groupRef.current.position.x + velocity.current.x * delta;
     const nextZ = groupRef.current.position.z + velocity.current.z * delta;
 
-    const BOUNDS = 68;
+    const BOUNDS = 220;
     let finalX = nextX;
     let finalZ = nextZ;
 
@@ -285,7 +285,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     }
 
     // ─── Fence wall collision (only where fence exists: ±29 extent) ───
-    const FENCE = 29;
+    const FENCE = 45;
     const GATE_HALF = 4; // gate opening half-width
     const PUSH = 0.05;
     const prevX = groupRef.current.position.x;
@@ -451,7 +451,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       }
 
       // Determine crossing direction: if player is inside fence, walk outward; if outside, walk inward
-      const isInside = Math.abs(playerPos.x) < 29 && Math.abs(playerPos.z) < 29;
+      const isInside = Math.abs(playerPos.x) < 45 && Math.abs(playerPos.z) < 45;
       const crossDir = isInside
         ? closestGate.dir.clone() // walk outward
         : closestGate.dir.clone().negate(); // walk inward
@@ -471,7 +471,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       {/* Spotlight target */}
       <object3D ref={targetRef} position={[0, 0.2, 3]} />
 
-      <group ref={groupRef} position={[0, 0, 8]}>
+      <group ref={groupRef} position={[0, 1.3, 8]}>
         <group ref={bodyGroupRef}>
 
           {/* ════════════ TORSO ════════════ */}

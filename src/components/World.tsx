@@ -62,7 +62,7 @@ export default function World() {
     <group>
       {/* Outer ground (extends to camera horizon) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-        <planeGeometry args={[400, 400]} />
+        <planeGeometry args={[800, 800]} />
         <meshStandardMaterial
           map={texOuter}
           color="#b8b8b8ff"
@@ -72,7 +72,7 @@ export default function World() {
       </mesh>
       {/* Ground */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[60, 60]} />
+        <planeGeometry args={[100, 100]} />
         <meshStandardMaterial
           map={texBase}
           color="#b8b8b8ff"
@@ -114,7 +114,7 @@ export default function World() {
       <InstancedRocks items={props} />
 
       {/* ─── Back Fence Portal Gateway ─── */}
-      <group position={[-10, 0, -28.9]}>
+      <group position={[-10, 0, -44.9]}>
         {/* Portal Frame / Backing */}
         <mesh position={[0, 2.1, 0.1]}>
           <boxGeometry args={[3.1, 4.3, 0.4]} />

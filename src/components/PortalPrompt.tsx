@@ -30,7 +30,7 @@ export default function PortalPrompt() {
     });
 
     // Portal Door position (back fence)
-    const PORTAL_Z = -28.9;
+    const PORTAL_Z = -44.9;
 
     return (
         <group>

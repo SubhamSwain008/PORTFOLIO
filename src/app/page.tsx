@@ -127,6 +127,35 @@ export default function Home() {
 
       {/* 3D Scene — renders behind loading overlay */}
       <Scene />
+
+      {/* Hidden Night Audio */}
+      <audio
+        id="night-audio"
+        src="https://storage.googleapis.com/udio-artifacts-c33fe3ba-3ffe-471f-92c8-5dfef90b3ea3/samples/7a1bf4535db641808d8fea5d005186fe/1/The%2520Untitled.mp3"
+        loop
+        autoPlay
+        style={{ display: "none" }}
+      />
+      <InteractionUnlocker />
     </>
   );
+}
+
+// Helper to unlock audio on first interaction (browsers block autoplay until interaction)
+function InteractionUnlocker() {
+  useEffect(() => {
+    const unlock = () => {
+      const audio = document.getElementById("night-audio") as HTMLAudioElement | null;
+      if (audio) {
+        audio.play().catch(() => { });
+      }
+    };
+    window.addEventListener("click", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+  return null;
 }

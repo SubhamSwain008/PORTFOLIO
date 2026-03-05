@@ -11,10 +11,10 @@ import { useGameStore } from "./useGameStore";
  * Only the nearest one fades in; the others stay invisible.
  */
 const GATE_POSITIONS: [number, number, number][] = [
-    [0, 2.2, -29],   // North
-    [0, 2.2, 29],    // South
-    [-29, 2.2, 0],   // West
-    [29, 2.2, 0],    // East
+    [0, 2.2, -45],   // North
+    [0, 2.2, 45],    // South
+    [-45, 2.2, 0],   // West
+    [45, 2.2, 0],    // East
 ];
 
 function SingleGatePrompt({

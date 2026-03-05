@@ -9,6 +9,7 @@ import CameraController from "./CameraController";
 import EntrancePrompt from "./EntrancePrompt";
 import PortalPrompt from "./PortalPrompt";
 import GatePrompt from "./GatePrompt";
+import BoundaryDialogue from "./BoundaryDialogue";
 import InteriorWorld from "./InteriorWorld";
 import {
   useGameStore,
@@ -279,6 +280,9 @@ export default function Scene() {
 
               {/* Fence Gate prompt */}
               <GatePrompt playerPosRef={playerPosRef} />
+
+              {/* Boundary dialogue */}
+              <BoundaryDialogue playerPosRef={playerPosRef} />
 
               {/* Player */}
               <Player positionRef={playerPosRef} keys={keys} />

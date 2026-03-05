@@ -56,17 +56,17 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
     const rightLegRef = useRef<THREE.Group>(null!);
 
     const SPEED = 7;
-    const PORTAL_POS = new THREE.Vector3(-10, 0, -28.9);
+    const PORTAL_POS = new THREE.Vector3(-10, 0, -44.9);
     const ENTRANCE_RADIUS = 4;
     const wasNearPortal = useRef(false);
     const wasNearGate = useRef(false);
 
     // ─── Fence gate positions (center of each side) ───
     const GATE_POSITIONS = [
-        { pos: new THREE.Vector3(0, 0, -29), dir: new THREE.Vector3(0, 0, -1) },  // North
-        { pos: new THREE.Vector3(0, 0, 29), dir: new THREE.Vector3(0, 0, 1) },   // South
-        { pos: new THREE.Vector3(-29, 0, 0), dir: new THREE.Vector3(-1, 0, 0) }, // West
-        { pos: new THREE.Vector3(29, 0, 0), dir: new THREE.Vector3(1, 0, 0) },   // East
+        { pos: new THREE.Vector3(0, 0, -45), dir: new THREE.Vector3(0, 0, -1) },  // North
+        { pos: new THREE.Vector3(0, 0, 45), dir: new THREE.Vector3(0, 0, 1) },   // South
+        { pos: new THREE.Vector3(-45, 0, 0), dir: new THREE.Vector3(-1, 0, 0) }, // West
+        { pos: new THREE.Vector3(45, 0, 0), dir: new THREE.Vector3(1, 0, 0) },   // East
     ];
     const GATE_DETECT_RADIUS = 4;
     const gateCrossingTarget = useRef<THREE.Vector3 | null>(null);
@@ -168,7 +168,7 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
         const nextX = groupRef.current.position.x + velocity.current.x * delta;
         const nextZ = groupRef.current.position.z + velocity.current.z * delta;
 
-        const BOUNDS = 68;
+        const BOUNDS = 220;
         let finalX = nextX;
         let finalZ = nextZ;
 
@@ -235,7 +235,7 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
         }
 
         // ─── Fence wall collision (only where fence exists: ±29 extent) ───
-        const FENCE = 29;
+        const FENCE = 45;
         const GATE_HALF = 4;
         const PUSH = 0.05;
         const prevX = groupRef.current.position.x;
@@ -348,7 +348,7 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
                 }
             }
 
-            const isInside = Math.abs(playerPos.x) < 29 && Math.abs(playerPos.z) < 29;
+            const isInside = Math.abs(playerPos.x) < 45 && Math.abs(playerPos.z) < 45;
             const crossDir = isInside
                 ? closestGate.dir.clone()
                 : closestGate.dir.clone().negate();
@@ -363,7 +363,7 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
     }, []);
 
     return (
-        <group ref={groupRef} position={[0, 0, 8]}>
+        <group ref={groupRef} position={[0, 1.3, 8]}>
             <group ref={bodyGroupRef}>
 
                 {/* ════════════ TORSO ════════════ */}

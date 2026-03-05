@@ -52,7 +52,7 @@ export default function DayWorld() {
         <group>
             {/* Outer ground */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-                <planeGeometry args={[400, 400]} />
+                <planeGeometry args={[800, 800]} />
                 <meshStandardMaterial
                     map={texOuter}
                     color="#d0d8c0"
@@ -62,7 +62,7 @@ export default function DayWorld() {
             </mesh>
             {/* Ground */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-                <planeGeometry args={[60, 60]} />
+                <planeGeometry args={[100, 100]} />
                 <meshStandardMaterial
                     map={texBase}
                     color="#c8d0b8"
@@ -104,7 +104,7 @@ export default function DayWorld() {
             <InstancedDayRocks items={DAY_ENV_PROPS} />
 
             {/* ─── Back Fence Portal Gateway (return to night world) ─── */}
-            <group position={[-10, 0, -28.9]}>
+            <group position={[-10, 0, -44.9]}>
                 {/* Portal Frame */}
                 <mesh position={[0, 2.1, 0.1]}>
                     <boxGeometry args={[3.1, 4.3, 0.4]} />
