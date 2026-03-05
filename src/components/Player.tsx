@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getGameState, setGameState, useGameStore } from "./useGameStore";
@@ -11,11 +11,39 @@ interface PlayerProps {
   keys: React.MutableRefObject<Record<string, boolean>>;
 }
 
+// ─── Shared materials (created once, reused) ───
+const skinMat = new THREE.MeshStandardMaterial({
+  color: "#c8a88a",
+  roughness: 0.7,
+  metalness: 0.05,
+});
+const shirtMat = new THREE.MeshStandardMaterial({
+  color: "#3d3852",
+  emissive: "#0e0c12",
+  emissiveIntensity: 0.15,
+  roughness: 0.75,
+  metalness: 0.1,
+});
+const pantsMat = new THREE.MeshStandardMaterial({
+  color: "#2a2535",
+  roughness: 0.85,
+  metalness: 0.08,
+});
+const shoeMat = new THREE.MeshStandardMaterial({
+  color: "#1a1a1f",
+  roughness: 0.9,
+  metalness: 0.15,
+});
+const hairMat = new THREE.MeshStandardMaterial({
+  color: "#1c1820",
+  roughness: 0.95,
+  metalness: 0.0,
+});
+
 export default function Player({ positionRef, keys }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const velocity = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
-  // ... other refs remain the same
   const currentAngle = useRef(0);
   const walkTime = useRef(0);
   const isMoving = useRef(false);
@@ -24,15 +52,18 @@ export default function Player({ positionRef, keys }: PlayerProps) {
   const spotlightRef = useRef<THREE.SpotLight>(null!);
   const targetRef = useRef<THREE.Object3D>(null!);
   const flickerTime = useRef(0);
-  const baseFlashlightIntensity = 8;
+  const baseFlashlightIntensity = 66;
 
-  // Body part refs for walk bob
-  const bodyRef = useRef<THREE.Mesh>(null!);
-  const headRef = useRef<THREE.Mesh>(null!);
-  const armRef = useRef<THREE.Mesh>(null!);
+  // ─── Body part refs for proper walk animation ───
+  const bodyGroupRef = useRef<THREE.Group>(null!);
+  const headRef = useRef<THREE.Group>(null!);
+  const leftArmRef = useRef<THREE.Group>(null!);
+  const rightArmRef = useRef<THREE.Group>(null!);
+  const leftLegRef = useRef<THREE.Group>(null!);
+  const rightLegRef = useRef<THREE.Group>(null!);
+  const flashlightGroupRef = useRef<THREE.Group>(null!);
 
   const SPEED = 7;
-  const WORLD_HALF = 28;
 
   // Door position (front face of building)
   const DOOR_POS = new THREE.Vector3(0, 0, 4.5);
@@ -52,15 +83,13 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       state.gameMode === "transitioning-in" ||
       state.gameMode === "transitioning-out"
     ) {
-      // During transition-in: dim flashlight
       if (state.gameMode === "transitioning-in" && spotlightRef.current) {
-        spotlightRef.current.intensity *= 0.92; // exponential dim
+        spotlightRef.current.intensity *= 0.92;
       }
       positionRef.current.copy(groupRef.current.position);
       return;
     }
 
-    // Don't process if not in explore mode
     if (state.gameMode !== "explore") {
       positionRef.current.copy(groupRef.current.position);
       return;
@@ -73,10 +102,9 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     if (keys.current["a"] || keys.current["arrowleft"]) direction.current.x -= 1;
     if (keys.current["d"] || keys.current["arrowright"]) direction.current.x += 1;
 
-    // ─── Frame-independent Physics Constants ───
-    const ACCEL_RATE = 12; // How fast we reach top speed
-    const DECEL_RATE = 10; // How fast we stop
-    const ROT_RATE = 15;   // How fast we turn
+    const ACCEL_RATE = 12;
+    const DECEL_RATE = 10;
+    const ROT_RATE = 15;
 
     const hasInput = direction.current.length() > 0;
 
@@ -84,7 +112,6 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       direction.current.normalize();
       isMoving.current = true;
 
-      // Frame-independent Exponential Dampening to target speed
       const targetVX = direction.current.x * SPEED;
       const targetVZ = direction.current.z * SPEED;
 
@@ -100,7 +127,6 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       currentAngle.current += angleDiff * (1 - Math.exp(-ROT_RATE * delta));
       groupRef.current.rotation.y = currentAngle.current;
     } else {
-      // Frame-independent friction
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, 0, 1 - Math.exp(-DECEL_RATE * delta));
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, 0, 1 - Math.exp(-DECEL_RATE * delta));
 
@@ -116,14 +142,11 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     const nextX = groupRef.current.position.x + velocity.current.x * delta;
     const nextZ = groupRef.current.position.z + velocity.current.z * delta;
 
-    // World bounds
     const BOUNDS = 28;
-
     let finalX = nextX;
     let finalZ = nextZ;
 
     // Building collision
-    // Building base is 9x9 (half-size 4.5). Add player radius 0.3 = 4.8
     const BUILDING_HALF_X = 4.8;
     const BUILDING_HALF_Z = 4.8;
 
@@ -155,8 +178,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       if (item.type === "tree") {
         objectRadius = 0.4;
       } else if (item.type === "rock") {
-        // Rocks have varying scales. Base dodecahedron radius is 0.4
-        objectRadius = 0.4 * (item.scale || 1) * 0.8; // 0.8 is a tweak factor to make collision feel tighter
+        objectRadius = 0.4 * (item.scale || 1) * 0.8;
       } else {
         continue;
       }
@@ -171,7 +193,6 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       const distSq = dx * dx + dz * dz;
 
       if (distSq < minDist * minDist) {
-        // Collision! Push player outside the circle
         const dist = Math.sqrt(distSq);
         if (dist === 0) {
           finalX += minDist;
@@ -194,24 +215,55 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     // Report position BEFORE walk bob so camera doesn't shake
     positionRef.current.copy(groupRef.current.position);
 
-    // ─── Walk bob animation ───
+    // ─── Walk cycle animation ───
     if (isMoving.current) {
-      walkTime.current += delta * 8;
+      walkTime.current += delta * 9;
     } else {
-      walkTime.current *= 0.9;
+      walkTime.current *= 0.88;
     }
 
-    const bobAmount = Math.sin(walkTime.current) * 0.04;
-    const swayAmount = Math.sin(walkTime.current * 0.5) * 0.02;
+    const t = walkTime.current;
+    const walkCycle = Math.sin(t);
+    const walkCycleAbs = Math.abs(walkCycle);
 
-    if (bodyRef.current) bodyRef.current.position.y = bobAmount;
+    // Body bob (up/down bounce when walking)
+    const bodyBob = Math.abs(Math.sin(t * 2)) * 0.03;
+    const bodySway = Math.sin(t) * 0.015;
+
+    if (bodyGroupRef.current) {
+      bodyGroupRef.current.position.y = bodyBob;
+      bodyGroupRef.current.rotation.z = bodySway;
+    }
+
+    // Head bob and look sway
     if (headRef.current) {
-      headRef.current.position.y = 0.65 + bobAmount * 1.2;
-      headRef.current.rotation.z = swayAmount;
+      headRef.current.rotation.z = Math.sin(t * 0.5) * 0.03;
+      headRef.current.rotation.x = Math.sin(t * 2) * 0.015;
     }
-    if (armRef.current) {
-      armRef.current.rotation.x = Math.sin(walkTime.current) * 0.08;
-      armRef.current.position.y = 0.15 + bobAmount * 0.5;
+
+    // ─── Arm swing (opposite to legs) ───
+    const armSwing = walkCycle * 0.5;
+
+    if (leftArmRef.current) {
+      leftArmRef.current.rotation.x = armSwing;
+    }
+    if (rightArmRef.current) {
+      rightArmRef.current.rotation.x = -armSwing * 0.4; // less swing, holding flashlight
+    }
+
+    // ─── Leg swing ───
+    const legSwing = walkCycle * 0.55;
+
+    if (leftLegRef.current) {
+      leftLegRef.current.rotation.x = -legSwing;
+    }
+    if (rightLegRef.current) {
+      rightLegRef.current.rotation.x = legSwing;
+    }
+
+    // ─── Flashlight sway ───
+    if (flashlightGroupRef.current) {
+      flashlightGroupRef.current.rotation.x = -armSwing * 0.4 + 0.25;
     }
 
     // ─── Flashlight target ───
@@ -223,9 +275,9 @@ export default function Player({ positionRef, keys }: PlayerProps) {
 
     if (targetRef.current) {
       targetRef.current.position.set(
-        groupRef.current.position.x + facingDir.x * 15,
-        -1.0,
-        groupRef.current.position.z + facingDir.z * 15
+        groupRef.current.position.x + facingDir.x * 12,
+        0,
+        groupRef.current.position.z + facingDir.z * 12
       );
     }
 
@@ -265,85 +317,287 @@ export default function Player({ positionRef, keys }: PlayerProps) {
   return (
     <>
       {/* Spotlight target */}
-      <object3D ref={targetRef} position={[0, -0.5, 3]} />
+      <object3D ref={targetRef} position={[0, 0.2, 3]} />
 
       <group ref={groupRef} position={[0, 0, 8]}>
-        {/* Torso */}
-        <mesh ref={bodyRef} castShadow position={[0, 0, 0]}>
-          <capsuleGeometry args={[0.25, 0.6, 4, 8]} />
-          <meshStandardMaterial
-            color="#4a4555"
-            emissive="#0e0c12"
-            emissiveIntensity={0.2}
-            roughness={0.75}
-            metalness={0.15}
-          />
-        </mesh>
+        <group ref={bodyGroupRef}>
 
-        {/* Legs */}
-        <mesh castShadow position={[0, -0.35, 0]}>
-          <cylinderGeometry args={[0.2, 0.15, 0.4, 6]} />
-          <meshStandardMaterial
-            color="#35303e"
-            roughness={0.85}
-            metalness={0.1}
-          />
-        </mesh>
+          {/* ════════════ TORSO ════════════ */}
+          {/* Upper torso / chest */}
+          <mesh castShadow position={[0, 0.15, 0]}>
+            <boxGeometry args={[0.5, 0.45, 0.28]} />
+            <primitive object={shirtMat} attach="material" />
+          </mesh>
+          {/* Shoulder area (broader top) */}
+          <mesh castShadow position={[0, 0.32, 0]}>
+            <boxGeometry args={[0.56, 0.12, 0.26]} />
+            <primitive object={shirtMat} attach="material" />
+          </mesh>
+          {/* Lower torso / waist */}
+          <mesh castShadow position={[0, -0.12, 0]}>
+            <boxGeometry args={[0.42, 0.2, 0.24]} />
+            <primitive object={shirtMat} attach="material" />
+          </mesh>
+          {/* Belt */}
+          <mesh castShadow position={[0, -0.2, 0]}>
+            <boxGeometry args={[0.44, 0.06, 0.26]} />
+            <meshStandardMaterial color="#1a1820" roughness={0.5} metalness={0.3} />
+          </mesh>
+          {/* Belt buckle */}
+          <mesh castShadow position={[0, -0.2, 0.13]}>
+            <boxGeometry args={[0.06, 0.05, 0.02]} />
+            <meshStandardMaterial color="#b8a060" roughness={0.3} metalness={0.7} />
+          </mesh>
 
-        {/* Head */}
-        <mesh ref={headRef} castShadow position={[0, 0.65, 0]}>
-          <sphereGeometry args={[0.2, 8, 8]} />
-          <meshStandardMaterial
-            color="#8a8090"
-            emissive="#151218"
-            emissiveIntensity={0.1}
-            roughness={0.6}
-            metalness={0.2}
-          />
-        </mesh>
+          {/* ════════════ HIPS ════════════ */}
+          <mesh castShadow position={[0, -0.32, 0]}>
+            <boxGeometry args={[0.42, 0.15, 0.24]} />
+            <primitive object={pantsMat} attach="material" />
+          </mesh>
 
-        {/* Right arm */}
-        <mesh
-          ref={armRef}
-          castShadow
-          position={[0.35, 0.15, 0.15]}
-          rotation={[0.3, 0, 0]}
-        >
-          <boxGeometry args={[0.1, 0.4, 0.1]} />
-          <meshStandardMaterial
-            color="#3a3545"
-            roughness={0.8}
-            metalness={0.1}
-          />
-        </mesh>
+          {/* ════════════ HEAD GROUP ════════════ */}
+          <group ref={headRef} position={[0, 0.6, 0]}>
+            {/* Neck */}
+            <mesh castShadow position={[0, -0.12, 0]}>
+              <cylinderGeometry args={[0.08, 0.1, 0.12, 8]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Head */}
+            <mesh castShadow position={[0, 0.08, 0]}>
+              <boxGeometry args={[0.26, 0.28, 0.26]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Jaw / chin shape */}
+            <mesh castShadow position={[0, -0.02, 0.02]}>
+              <boxGeometry args={[0.22, 0.08, 0.22]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Hair top */}
+            <mesh castShadow position={[0, 0.2, -0.01]}>
+              <boxGeometry args={[0.28, 0.08, 0.28]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            {/* Hair back */}
+            <mesh castShadow position={[0, 0.1, -0.12]}>
+              <boxGeometry args={[0.27, 0.22, 0.06]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            {/* Hair sides */}
+            <mesh castShadow position={[-0.13, 0.1, -0.02]}>
+              <boxGeometry args={[0.04, 0.18, 0.2]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            <mesh castShadow position={[0.13, 0.1, -0.02]}>
+              <boxGeometry args={[0.04, 0.18, 0.2]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            {/* Left eye */}
+            <mesh position={[-0.07, 0.1, 0.13]}>
+              <sphereGeometry args={[0.03, 6, 6]} />
+              <meshStandardMaterial color="#e8e8e8" emissive="#444444" emissiveIntensity={0.3} />
+            </mesh>
+            {/* Left pupil */}
+            <mesh position={[-0.07, 0.1, 0.155]}>
+              <sphereGeometry args={[0.015, 6, 6]} />
+              <meshStandardMaterial color="#1a1a1a" />
+            </mesh>
+            {/* Right eye */}
+            <mesh position={[0.07, 0.1, 0.13]}>
+              <sphereGeometry args={[0.03, 6, 6]} />
+              <meshStandardMaterial color="#e8e8e8" emissive="#444444" emissiveIntensity={0.3} />
+            </mesh>
+            {/* Right pupil */}
+            <mesh position={[0.07, 0.1, 0.155]}>
+              <sphereGeometry args={[0.015, 6, 6]} />
+              <meshStandardMaterial color="#1a1a1a" />
+            </mesh>
+            {/* Nose */}
+            <mesh position={[0, 0.06, 0.14]}>
+              <boxGeometry args={[0.04, 0.06, 0.04]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Mouth line */}
+            <mesh position={[0, -0.0, 0.135]}>
+              <boxGeometry args={[0.08, 0.015, 0.01]} />
+              <meshStandardMaterial color="#8a6060" roughness={0.8} />
+            </mesh>
+            {/* Eyebrows */}
+            <mesh position={[-0.07, 0.15, 0.13]}>
+              <boxGeometry args={[0.06, 0.015, 0.02]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            <mesh position={[0.07, 0.15, 0.13]}>
+              <boxGeometry args={[0.06, 0.015, 0.02]} />
+              <primitive object={hairMat} attach="material" />
+            </mesh>
+            {/* Ears */}
+            <mesh castShadow position={[-0.14, 0.06, 0]}>
+              <boxGeometry args={[0.04, 0.08, 0.06]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            <mesh castShadow position={[0.14, 0.06, 0]}>
+              <boxGeometry args={[0.04, 0.08, 0.06]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+          </group>
 
-        {/* Flashlight cylinder */}
-        <mesh
-          position={[0.35, 0.1, 0.35]}
-          rotation={[Math.PI / 2 - 0.3, 0, 0]}
-        >
-          <cylinderGeometry args={[0.04, 0.06, 0.25, 6]} />
-          <meshStandardMaterial
-            color="#2a2a30"
-            metalness={0.6}
-            roughness={0.3}
-          />
-        </mesh>
+          {/* ════════════ LEFT ARM ════════════ */}
+          {/* Pivot at the shoulder */}
+          <group ref={leftArmRef} position={[-0.33, 0.28, 0]}>
+            {/* Upper arm */}
+            <mesh castShadow position={[0, -0.16, 0]}>
+              <boxGeometry args={[0.13, 0.3, 0.13]} />
+              <primitive object={shirtMat} attach="material" />
+            </mesh>
+            {/* Elbow joint */}
+            <mesh castShadow position={[0, -0.3, 0]}>
+              <sphereGeometry args={[0.06, 6, 6]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Forearm */}
+            <mesh castShadow position={[0, -0.43, 0]}>
+              <boxGeometry args={[0.11, 0.24, 0.11]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Hand */}
+            <mesh castShadow position={[0, -0.58, 0]}>
+              <boxGeometry args={[0.1, 0.08, 0.08]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Fingers (grouped) */}
+            <mesh castShadow position={[0, -0.64, 0]}>
+              <boxGeometry args={[0.08, 0.06, 0.06]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+          </group>
 
-        {/* Flashlight spotlight */}
+          {/* ════════════ RIGHT ARM (holding flashlight) ════════════ */}
+          <group ref={rightArmRef} position={[0.33, 0.28, 0]}>
+            {/* Upper arm */}
+            <mesh castShadow position={[0, -0.16, 0]}>
+              <boxGeometry args={[0.13, 0.3, 0.13]} />
+              <primitive object={shirtMat} attach="material" />
+            </mesh>
+            {/* Elbow joint */}
+            <mesh castShadow position={[0, -0.3, 0]}>
+              <sphereGeometry args={[0.06, 6, 6]} />
+              <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Forearm */}
+            <group ref={flashlightGroupRef} position={[0, -0.3, 0]} rotation={[0.25, 0, 0]}>
+              <mesh castShadow position={[0, -0.13, 0]}>
+                <boxGeometry args={[0.11, 0.24, 0.11]} />
+                <primitive object={skinMat} attach="material" />
+              </mesh>
+              {/* Hand gripping flashlight */}
+              <mesh castShadow position={[0, -0.27, 0.04]}>
+                <boxGeometry args={[0.1, 0.1, 0.12]} />
+                <primitive object={skinMat} attach="material" />
+              </mesh>
+              {/* Flashlight body */}
+              <mesh castShadow position={[0, -0.27, 0.16]}>
+                <cylinderGeometry args={[0.035, 0.045, 0.22, 8]} />
+                <meshStandardMaterial color="#2a2a30" metalness={0.7} roughness={0.25} />
+              </mesh>
+              {/* Flashlight head / lens */}
+              <mesh castShadow position={[0, -0.27, 0.28]}>
+                <cylinderGeometry args={[0.05, 0.035, 0.06, 8]} />
+                <meshStandardMaterial color="#3a3a40" metalness={0.6} roughness={0.3} />
+              </mesh>
+              {/* Flashlight lens glow */}
+              <mesh position={[0, -0.27, 0.32]}>
+                <circleGeometry args={[0.045, 8]} />
+                <meshStandardMaterial color="#fff5dd" emissive="#fff5aa" emissiveIntensity={2} />
+              </mesh>
+
+            </group>
+          </group>
+
+          {/* ════════════ LEFT LEG ════════════ */}
+          {/* Pivot at the hip */}
+          <group ref={leftLegRef} position={[-0.12, -0.40, 0]}>
+            {/* Thigh */}
+            <mesh castShadow position={[0, -0.18, 0]}>
+              <boxGeometry args={[0.18, 0.36, 0.18]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Knee */}
+            <mesh castShadow position={[0, -0.36, 0]}>
+              <sphereGeometry args={[0.075, 6, 6]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Shin */}
+            <mesh castShadow position={[0, -0.56, 0]}>
+              <boxGeometry args={[0.16, 0.34, 0.16]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Ankle */}
+            <mesh castShadow position={[0, -0.73, 0]}>
+              <sphereGeometry args={[0.07, 6, 6]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Shoe */}
+            <mesh castShadow position={[0, -0.82, 0.04]}>
+              <boxGeometry args={[0.16, 0.09, 0.26]} />
+              <primitive object={shoeMat} attach="material" />
+            </mesh>
+            {/* Shoe sole */}
+            <mesh castShadow position={[0, -0.88, 0.04]}>
+              <boxGeometry args={[0.17, 0.025, 0.28]} />
+              <meshStandardMaterial color="#111115" roughness={0.95} />
+            </mesh>
+          </group>
+
+          {/* ════════════ RIGHT LEG ════════════ */}
+          <group ref={rightLegRef} position={[0.12, -0.40, 0]}>
+            {/* Thigh */}
+            <mesh castShadow position={[0, -0.18, 0]}>
+              <boxGeometry args={[0.18, 0.36, 0.18]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Knee */}
+            <mesh castShadow position={[0, -0.36, 0]}>
+              <sphereGeometry args={[0.075, 6, 6]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Shin */}
+            <mesh castShadow position={[0, -0.56, 0]}>
+              <boxGeometry args={[0.16, 0.34, 0.16]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Ankle */}
+            <mesh castShadow position={[0, -0.73, 0]}>
+              <sphereGeometry args={[0.07, 6, 6]} />
+              <primitive object={pantsMat} attach="material" />
+            </mesh>
+            {/* Shoe */}
+            <mesh castShadow position={[0, -0.82, 0.04]}>
+              <boxGeometry args={[0.16, 0.09, 0.26]} />
+              <primitive object={shoeMat} attach="material" />
+            </mesh>
+            {/* Shoe sole */}
+            <mesh castShadow position={[0, -0.88, 0.04]}>
+              <boxGeometry args={[0.17, 0.025, 0.28]} />
+              <meshStandardMaterial color="#111115" roughness={0.95} />
+            </mesh>
+          </group>
+
+        </group>
+
+        {/* Flashlight spotlight — placed at player group level so it stays above ground */}
         <spotLight
           ref={spotlightRef}
-          position={[0.35, 0.25, 0.5]}
+          position={[0.3, 0.5, 0.3]}
           color="#fff5dd"
           intensity={baseFlashlightIntensity}
-          distance={120}
-          angle={0.4}
-          penumbra={0.4}
+          distance={220}
+          angle={0.28}
+          penumbra={0.6}
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
           shadow-bias={-0.001}
-          decay={1.2}
+          decay={1.0}
         />
 
         {/* Overhead fill */}
