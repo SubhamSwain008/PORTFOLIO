@@ -36,7 +36,7 @@ export default function PortalPrompt() {
         <group>
             {/* ─── "[ X ] ENTER" prompt ─── */}
             <Billboard
-                position={[0, 2.5, PORTAL_Z + 2]}
+                position={[-10, 2.5, PORTAL_Z + 2]}
                 follow
                 lockX={false}
                 lockY={false}

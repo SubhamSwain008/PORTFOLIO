@@ -68,8 +68,19 @@ export default function Player({ positionRef, keys }: PlayerProps) {
   // Door position (front face of building)
   const DOOR_POS = new THREE.Vector3(0, 0, 4.5);
   // Portal Door position (back face fence)
-  const PORTAL_POS = new THREE.Vector3(0, 0, -28.9);
+  const PORTAL_POS = new THREE.Vector3(-10, 0, -28.9);
   const ENTRANCE_RADIUS = 4;
+
+  // ─── Fence gate positions (center of each side) ───
+  const GATE_POSITIONS = [
+    { pos: new THREE.Vector3(0, 0, -29), dir: new THREE.Vector3(0, 0, -1), axis: "z" as const },  // North
+    { pos: new THREE.Vector3(0, 0, 29), dir: new THREE.Vector3(0, 0, 1), axis: "z" as const },   // South
+    { pos: new THREE.Vector3(-29, 0, 0), dir: new THREE.Vector3(-1, 0, 0), axis: "x" as const }, // West
+    { pos: new THREE.Vector3(29, 0, 0), dir: new THREE.Vector3(1, 0, 0), axis: "x" as const },   // East
+  ];
+  const GATE_DETECT_RADIUS = 4;
+  const gateCrossingTarget = useRef<THREE.Vector3 | null>(null);
+  const gateCrossingDir = useRef<THREE.Vector3>(new THREE.Vector3());
 
   const gameMode = useGameStore((s) => s.gameMode);
 
@@ -90,8 +101,73 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       return;
     }
 
-    if (state.gameMode !== "explore") {
+    if (state.gameMode !== "explore" && !state.isCrossingGate) {
       positionRef.current.copy(groupRef.current.position);
+      return;
+    }
+
+    // ─── Auto-walk through gate ───
+    if (state.isCrossingGate && gateCrossingTarget.current) {
+      const target = gateCrossingTarget.current;
+      const dir = gateCrossingDir.current;
+      const pos = groupRef.current.position;
+
+      // Move toward target
+      const moveSpeed = SPEED * 0.8;
+      pos.x += dir.x * moveSpeed * delta;
+      pos.z += dir.z * moveSpeed * delta;
+
+      // Face movement direction
+      const targetAngle = Math.atan2(dir.x, dir.z);
+      currentAngle.current = targetAngle;
+      groupRef.current.rotation.y = currentAngle.current;
+
+      // Walk animation during crossing
+      walkTime.current += delta * 9;
+      isMoving.current = true;
+
+      // Check if we've passed the target
+      const toTarget = new THREE.Vector3().subVectors(target, pos);
+      const dot = toTarget.dot(dir);
+      if (dot <= 0) {
+        // Arrived past the target
+        setGameState({ isCrossingGate: false, isNearGate: false });
+        gateCrossingTarget.current = null;
+      }
+
+      positionRef.current.copy(groupRef.current.position);
+
+      // Still animate body parts
+      const t = walkTime.current;
+      const walkCycle = Math.sin(t);
+      const bodyBob = Math.abs(Math.sin(t * 2)) * 0.03;
+      const bodySway = Math.sin(t) * 0.015;
+      if (bodyGroupRef.current) {
+        bodyGroupRef.current.position.y = bodyBob;
+        bodyGroupRef.current.rotation.z = bodySway;
+      }
+      if (headRef.current) {
+        headRef.current.rotation.z = Math.sin(t * 0.5) * 0.03;
+        headRef.current.rotation.x = Math.sin(t * 2) * 0.015;
+      }
+      const armSwing = walkCycle * 0.5;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = armSwing;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -armSwing * 0.4;
+      const legSwing = walkCycle * 0.55;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = -legSwing;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = legSwing;
+      if (flashlightGroupRef.current) flashlightGroupRef.current.rotation.x = -armSwing * 0.4 + 0.25;
+
+      // Flashlight target + flicker during crossing
+      const facingDir = new THREE.Vector3(Math.sin(currentAngle.current), 0, Math.cos(currentAngle.current));
+      if (targetRef.current) {
+        targetRef.current.position.set(pos.x + facingDir.x * 12, 0, pos.z + facingDir.z * 12);
+      }
+      flickerTime.current += delta;
+      if (spotlightRef.current) {
+        const flicker = 1.0 + Math.sin(flickerTime.current * 3.7) * 0.03 + Math.sin(flickerTime.current * 7.3) * 0.02;
+        spotlightRef.current.intensity = baseFlashlightIntensity * flicker;
+      }
       return;
     }
 
@@ -142,7 +218,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     const nextX = groupRef.current.position.x + velocity.current.x * delta;
     const nextZ = groupRef.current.position.z + velocity.current.z * delta;
 
-    const BOUNDS = 28;
+    const BOUNDS = 68;
     let finalX = nextX;
     let finalZ = nextZ;
 
@@ -206,6 +282,34 @@ export default function Player({ positionRef, keys }: PlayerProps) {
         finalX += nx * overlap;
         finalZ += nz * overlap;
       }
+    }
+
+    // ─── Fence wall collision (only where fence exists: ±29 extent) ───
+    const FENCE = 29;
+    const GATE_HALF = 4; // gate opening half-width
+    const PUSH = 0.05;
+    const prevX = groupRef.current.position.x;
+    const prevZ = groupRef.current.position.z;
+
+    // North wall (z = -FENCE): fence exists from x=-FENCE to x=FENCE
+    if (Math.abs(finalX) <= FENCE && Math.abs(finalX) > GATE_HALF) {
+      if (prevZ > -FENCE && finalZ <= -FENCE) finalZ = -FENCE + PUSH;
+      else if (prevZ < -FENCE && finalZ >= -FENCE) finalZ = -FENCE - PUSH;
+    }
+    // South wall (z = +FENCE)
+    if (Math.abs(finalX) <= FENCE && Math.abs(finalX) > GATE_HALF) {
+      if (prevZ < FENCE && finalZ >= FENCE) finalZ = FENCE - PUSH;
+      else if (prevZ > FENCE && finalZ <= FENCE) finalZ = FENCE + PUSH;
+    }
+    // West wall (x = -FENCE): fence exists from z=-FENCE to z=FENCE
+    if (Math.abs(finalZ) <= FENCE && Math.abs(finalZ) > GATE_HALF) {
+      if (prevX > -FENCE && finalX <= -FENCE) finalX = -FENCE + PUSH;
+      else if (prevX < -FENCE && finalX >= -FENCE) finalX = -FENCE - PUSH;
+    }
+    // East wall (x = +FENCE)
+    if (Math.abs(finalZ) <= FENCE && Math.abs(finalZ) > GATE_HALF) {
+      if (prevX < FENCE && finalX >= FENCE) finalX = FENCE - PUSH;
+      else if (prevX > FENCE && finalX <= FENCE) finalX = FENCE + PUSH;
     }
 
     // Enforce world bounds
@@ -305,6 +409,19 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     if (nearPortal !== state.isNearPortal) {
       setGameState({ isNearPortal: nearPortal });
     }
+
+    // ─── Gate proximity detection ───
+    let nearAnyGate = false;
+    for (const gate of GATE_POSITIONS) {
+      const gateDist = groupRef.current.position.distanceTo(gate.pos);
+      if (gateDist < GATE_DETECT_RADIUS) {
+        nearAnyGate = true;
+        break;
+      }
+    }
+    if (nearAnyGate !== state.isNearGate && !state.isCrossingGate) {
+      setGameState({ isNearGate: nearAnyGate });
+    }
   });
 
   // Wire spotlight target after mount
@@ -313,6 +430,41 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       spotlightRef.current.target = targetRef.current;
     }
   });
+
+  // ─── Gate X-key handler ───
+  useEffect(() => {
+    const handleGateKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "x" || e.repeat) return;
+      const state = getGameState();
+      if (state.gameMode !== "explore" || !state.isNearGate || state.isCrossingGate) return;
+
+      // Find the closest gate
+      let closestGate = GATE_POSITIONS[0];
+      let closestDist = Infinity;
+      const playerPos = groupRef.current.position;
+      for (const gate of GATE_POSITIONS) {
+        const d = playerPos.distanceTo(gate.pos);
+        if (d < closestDist) {
+          closestDist = d;
+          closestGate = gate;
+        }
+      }
+
+      // Determine crossing direction: if player is inside fence, walk outward; if outside, walk inward
+      const isInside = Math.abs(playerPos.x) < 29 && Math.abs(playerPos.z) < 29;
+      const crossDir = isInside
+        ? closestGate.dir.clone() // walk outward
+        : closestGate.dir.clone().negate(); // walk inward
+
+      // Set target 6 units through the gate from current position
+      gateCrossingTarget.current = playerPos.clone().add(crossDir.clone().multiplyScalar(6));
+      gateCrossingDir.current.copy(crossDir);
+      setGameState({ isCrossingGate: true });
+    };
+
+    window.addEventListener("keydown", handleGateKey);
+    return () => window.removeEventListener("keydown", handleGateKey);
+  }, []);
 
   return (
     <>

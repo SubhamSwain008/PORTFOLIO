@@ -1,12 +1,7 @@
-export interface EnvItem {
-    type: "tree" | "rock";
-    pos: [number, number, number];
-    scale?: number;
-    variant?: number;
-}
+import { EnvItem } from "./environment";
 
-// Generate the determinist environment layout
-function generateEnvironment(): EnvItem[] {
+// Generate a DIFFERENT deterministic environment layout for the daytime realm
+function generateDayEnvironment(): EnvItem[] {
     const items: EnvItem[] = [];
 
     const rng = (seed: number) => {
@@ -17,21 +12,23 @@ function generateEnvironment(): EnvItem[] {
         };
     };
 
-    const random = rng(42);
+    // Different seed = different world layout
+    const random = rng(137);
 
-    // Trees
+    // Trees — more spread out, different positions
     for (let i = 0; i < 300; i++) {
         const x = (random() - 0.5) * 140;
         const z = (random() - 0.5) * 140;
 
+        // Keep center clear for building
         if (Math.abs(x) < 7 && Math.abs(z) < 7) continue;
 
         // Keep portal area clear (portal at x=-10, z=-28.9)
         const dxP = x - (-10);
         const dzP = z - (-28.9);
-        if (dxP * dxP + dzP * dzP < 36) continue; // 6-unit radius exclusion
+        if (dxP * dxP + dzP * dzP < 36) continue;
 
-        const scale = 0.6 + random() * 1.0;
+        const scale = 0.7 + random() * 1.1;
         const variant = Math.floor(random() * 5);
 
         items.push({
@@ -42,7 +39,7 @@ function generateEnvironment(): EnvItem[] {
         });
     }
 
-    // Rocks
+    // Rocks — different scattering
     for (let i = 0; i < 150; i++) {
         const x = (random() - 0.5) * 138;
         const z = (random() - 0.5) * 138;
@@ -54,7 +51,7 @@ function generateEnvironment(): EnvItem[] {
         const dzP = z - (-28.9);
         if (dxP * dxP + dzP * dzP < 36) continue;
 
-        const scale = 0.5 + random() * 1.2;
+        const scale = 0.4 + random() * 1.0;
 
         items.push({
             type: "rock",
@@ -66,4 +63,4 @@ function generateEnvironment(): EnvItem[] {
     return items;
 }
 
-export const ENV_PROPS = generateEnvironment();
+export const DAY_ENV_PROPS = generateDayEnvironment();

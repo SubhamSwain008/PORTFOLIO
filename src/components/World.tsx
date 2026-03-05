@@ -6,212 +6,11 @@ import { useTexture, useVideoTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import ProfileBuilding from "./ProfileBuilding";
 import { ENV_PROPS } from "../lib/environment";
-
-// Enhanced low-poly leafy tree with variants
-function LeafyTree({
-  position,
-  scale = 1,
-  variant = 0,
-}: {
-  position: [number, number, number];
-  scale?: number;
-  variant?: number;
-}) {
-  const configs = [
-    { color: "#1a2a20", shape: "sphere", height: 2.0, radius: 1.2 },
-    { color: "#15241d", shape: "cone", height: 2.8, radius: 1.1 },
-    { color: "#362217", shape: "sphere", height: 1.8, radius: 1.4 },
-    { color: "#232e2a", shape: "sphere", height: 2.4, radius: 1.0 },
-    { color: "#272e1c", shape: "cone", height: 2.2, radius: 1.3 },
-  ];
-
-  const conf = configs[variant % configs.length];
-
-  const leafTex = useTexture("/assets/leaf.png");
-  leafTex.wrapS = THREE.RepeatWrapping;
-  leafTex.wrapT = THREE.RepeatWrapping;
-  // Repeat to make the leaf texture fit nicely on the low-poly shapes
-  leafTex.repeat.set(4, 4);
-  leafTex.magFilter = THREE.NearestFilter;
-  leafTex.minFilter = THREE.NearestFilter;
-  // Update texture needsUpdate
-  leafTex.needsUpdate = true;
-
-  const leafMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(conf.color).offsetHSL(
-          (variant % 3) * 0.01,
-          0,
-          (variant % 2) * 0.03
-        ),
-        map: leafTex,
-        roughness: 0.85,
-        metalness: 0.04,
-        flatShading: true,
-      }),
-    [conf.color, variant, leafTex]
-  );
-
-  return (
-    <group position={position} scale={scale}>
-      {/* Trunk */}
-      <mesh position={[0, conf.height / 2, 0]} castShadow>
-        <cylinderGeometry args={[0.08, 0.18, conf.height, 6]} />
-        <meshStandardMaterial
-          color="#2d241c"
-          roughness={0.9}
-          metalness={0}
-          flatShading
-        />
-      </mesh>
-
-      {/* Main canopy */}
-      <mesh
-        position={[
-          0,
-          conf.shape === "cone"
-            ? conf.height + conf.radius
-            : conf.height + conf.radius / 1.6,
-          0,
-        ]}
-        castShadow
-      >
-        {conf.shape === "sphere" ? (
-          <icosahedronGeometry args={[conf.radius, 1]} />
-        ) : (
-          <coneGeometry args={[conf.radius, conf.radius * 2.1, 6]} />
-        )}
-        <primitive object={leafMaterial} attach="material" />
-      </mesh>
-
-      {/* Extra foliage clusters for sphere trees */}
-      {conf.shape === "sphere" && (
-        <>
-          <mesh position={[0.4, conf.height + conf.radius * 0.9, 0.2]} castShadow>
-            <icosahedronGeometry args={[conf.radius * 0.55, 0]} />
-            <primitive object={leafMaterial} attach="material" />
-          </mesh>
-
-          <mesh position={[-0.35, conf.height + conf.radius * 0.8, -0.25]} castShadow>
-            <icosahedronGeometry args={[conf.radius * 0.45, 0]} />
-            <primitive object={leafMaterial} attach="material" />
-          </mesh>
-
-          <mesh position={[0.15, conf.height + conf.radius * 1.1, -0.35]} castShadow>
-            <icosahedronGeometry args={[conf.radius * 0.35, 0]} />
-            <primitive object={leafMaterial} attach="material" />
-          </mesh>
-        </>
-      )}
-
-      {/* Secondary cone layer for pine variants */}
-      {conf.shape === "cone" && (
-        <mesh position={[0, conf.height + conf.radius * 0.6, 0]} castShadow>
-          <coneGeometry args={[conf.radius * 0.75, conf.radius * 1.4, 6]} />
-          <primitive object={leafMaterial} attach="material" />
-        </mesh>
-      )}
-    </group>
-  );
-}
-
-// Low-poly rock
-function Rock({
-  position,
-  scale = 1,
-}: {
-  position: [number, number, number];
-  scale?: number;
-}) {
-  return (
-    <mesh position={position} scale={scale} castShadow receiveShadow>
-      <dodecahedronGeometry args={[0.4, 0]} />
-      <meshStandardMaterial
-        color="#2a2530"
-        roughness={0.9}
-        metalness={0.08}
-        flatShading
-      />
-    </mesh>
-  );
-}
-
-// Greyish picket fence segment
-function FenceSegment({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
-  const picketCount = 12;
-  const segmentWidth = 4;
-  const spacing = segmentWidth / picketCount;
-
-  return (
-    <group position={position} rotation={rotation}>
-      {/* Top rail */}
-      <mesh position={[0, 0.8, 0]}>
-        <boxGeometry args={[segmentWidth, 0.06, 0.04]} />
-        <meshStandardMaterial color="#7a7c80" roughness={0.7} metalness={0.02} />
-      </mesh>
-      {/* Bottom rail */}
-      <mesh position={[0, 0.35, 0]}>
-        <boxGeometry args={[segmentWidth, 0.06, 0.04]} />
-        <meshStandardMaterial color="#7a7c80" roughness={0.7} metalness={0.02} />
-      </mesh>
-      {/* Pickets */}
-      {Array.from({ length: picketCount }, (_, i) => {
-        const x = -segmentWidth / 2 + spacing / 2 + i * spacing;
-        const height = 0.9 + (i % 3 === 0 ? 0.12 : 0); // varied heights
-        return (
-          <mesh key={i} position={[x, height / 2, 0]}>
-            <boxGeometry args={[0.08, height, 0.03]} />
-            <meshStandardMaterial color="#6b6d73" roughness={0.75} metalness={0.02} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-}
-
-function FencePerimeter() {
-  const halfSize = 29; // slightly inside 60/2=30
-  const segmentWidth = 4;
-  const segments = Math.ceil((halfSize * 2) / segmentWidth);
-
-  return (
-    <group>
-      {/* North fence (back) */}
-      {Array.from({ length: segments }, (_, i) => (
-        <FenceSegment
-          key={`n${i}`}
-          position={[-halfSize + segmentWidth / 2 + i * segmentWidth, 0, -halfSize]}
-        />
-      ))}
-      {/* South fence (front) */}
-      {Array.from({ length: segments }, (_, i) => (
-        <FenceSegment
-          key={`s${i}`}
-          position={[-halfSize + segmentWidth / 2 + i * segmentWidth, 0, halfSize]}
-        />
-      ))}
-      {/* West fence (left) */}
-      {Array.from({ length: segments }, (_, i) => (
-        <FenceSegment
-          key={`w${i}`}
-          position={[-halfSize, 0, -halfSize + segmentWidth / 2 + i * segmentWidth]}
-          rotation={[0, Math.PI / 2, 0]}
-        />
-      ))}
-      {/* East fence (right) */}
-      {Array.from({ length: segments }, (_, i) => (
-        <FenceSegment
-          key={`e${i}`}
-          position={[halfSize, 0, -halfSize + segmentWidth / 2 + i * segmentWidth]}
-          rotation={[0, Math.PI / 2, 0]}
-        />
-      ))}
-    </group>
-  );
-}
+import { InstancedTrees, InstancedRocks, InstancedFencePerimeter } from "./InstancedNightEnv";
 
 // The PortalGateway video component has been removed in favor of a static image texture.
+
+
 
 export default function World() {
   const props = ENV_PROPS;
@@ -308,24 +107,14 @@ export default function World() {
       <ProfileBuilding />
 
       {/* White Picket Fence around perimeter */}
-      <FencePerimeter />
+      <InstancedFencePerimeter />
 
       {/* Environment */}
-      {props.map((item, i) =>
-        item.type === "tree" ? (
-          <LeafyTree
-            key={`tree-${i}`}
-            position={item.pos}
-            scale={item.scale}
-            variant={item.variant}
-          />
-        ) : (
-          <Rock key={`rock-${i}`} position={item.pos} scale={item.scale} />
-        )
-      )}
+      <InstancedTrees items={props} />
+      <InstancedRocks items={props} />
 
       {/* ─── Back Fence Portal Gateway ─── */}
-      <group position={[0, 0, -28.9]}>
+      <group position={[-10, 0, -28.9]}>
         {/* Portal Frame / Backing */}
         <mesh position={[0, 2.1, 0.1]}>
           <boxGeometry args={[3.1, 4.3, 0.4]} />

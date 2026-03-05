@@ -8,6 +8,7 @@ import Player from "./Player";
 import CameraController from "./CameraController";
 import EntrancePrompt from "./EntrancePrompt";
 import PortalPrompt from "./PortalPrompt";
+import GatePrompt from "./GatePrompt";
 import InteriorWorld from "./InteriorWorld";
 import {
   useGameStore,
@@ -131,7 +132,11 @@ function XKeyHandler() {
           return;
         }
 
-        if (state.gameMode === "explore" && state.isNearEntrance) {
+        if (state.gameMode === "explore" && state.isNearPortal) {
+          // Navigate to the daytime realm — full page nav frees night world memory
+          window.location.href = "/realm";
+          return;
+        } else if (state.gameMode === "explore" && state.isNearEntrance) {
           setGameState({ gameMode: "transitioning-in", transitionProgress: 0 });
         } else if (state.gameMode === "interior" && state.isNearExit && state.currentFloor === 0) {
           setGameState({ gameMode: "transitioning-out", transitionProgress: 0 });
@@ -271,6 +276,9 @@ export default function Scene() {
 
               {/* Back Portal prompt */}
               <PortalPrompt />
+
+              {/* Fence Gate prompt */}
+              <GatePrompt playerPosRef={playerPosRef} />
 
               {/* Player */}
               <Player positionRef={playerPosRef} keys={keys} />
