@@ -7,20 +7,36 @@ import { useFrame } from "@react-three/fiber";
 import ProfileBuilding from "./ProfileBuilding";
 import { ENV_PROPS } from "../lib/environment";
 import { InstancedTrees, InstancedRocks, InstancedFencePerimeter } from "./InstancedNightEnv";
+import WorldItems from "./inventory/WorldItems";
 
-// The PortalGateway video component has been removed in favor of a static image texture.
+interface WorldProps {
+  playerPosRef?: React.MutableRefObject<THREE.Vector3>;
+}
 
-
-
-export default function World() {
+export default function World({ playerPosRef }: WorldProps) {
   const props = ENV_PROPS;
-
   const grassTexture = useTexture("/assets/grass.png");
   const portalVideo = useVideoTexture("/assets/portal.mp4", {
     muted: true,
     loop: true,
     start: true,
     crossOrigin: "anonymous",
+  });
+
+  // Optimize: Pause the video when player is far away
+  useFrame(({ camera }) => {
+    if (!portalVideo || !portalVideo.image) return;
+
+    // Distance from camera to portal
+    const dist = camera.position.distanceToSquared(new THREE.Vector3(-10, 0, -44.9));
+    const video = portalVideo.image as HTMLVideoElement;
+
+    // 60 units squared = 3600 (User manual override: 1800)
+    if (dist > 1800 && !video.paused) {
+      video.pause();
+    } else if (dist <= 1800 && video.paused) {
+      video.play();
+    }
   });
 
   // Clone textures with appropriate repetitions for the different sized planes
@@ -136,6 +152,9 @@ export default function World() {
           decay={2}
         />
       </group>
+
+      {/* ─── Collectible Items ─── */}
+      {playerPosRef && <WorldItems playerPosRef={playerPosRef} realm="night" />}
     </group>
   );
 }

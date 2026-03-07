@@ -27,7 +27,7 @@ export default function WallCandle({ position, delay = 0 }: { position: [number,
             <mesh position={[0, 0.2, 0.04]}><cylinderGeometry args={[0.03, 0.04, 0.25, 6]} /><meshStandardMaterial color="#c8b890" roughness={0.8} /></mesh>
             <mesh ref={flameRef} position={[0, 0.35, 0.04]}>
                 <sphereGeometry args={[0.04, 6, 6]} />
-                <meshStandardMaterial color="#ff0000ff" emissive="#ffaa00" emissiveIntensity={8} transparent opacity={0.9} />
+                <meshStandardMaterial color="#ff0000" emissive="#ffaa00" emissiveIntensity={8} transparent opacity={0.9} />
             </mesh>
             <pointLight ref={lightRef} position={[0, 0.5, 0.2]} color="#ff8833" intensity={3.0} distance={8} decay={2} />
         </group>

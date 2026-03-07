@@ -1,0 +1,37 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("neon_db")
+  directUrl = env("neon_db_direct")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  otp         String?
+  otp_expires DateTime? @db.Timestamptz
+  created_at  DateTime  @default(now()) @db.Timestamptz
+
+  @@map("users")
+}
+enum InventoryItemType {
+  WEAPON
+  ARMOR
+  POTION
+  MISC
+}
+model InventoryItem {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  quantity    Int       @default(0)
+  type        InventoryItemType?
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @updatedAt @db.Timestamptz
+
+  @@map("inventory_items")
+}

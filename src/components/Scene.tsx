@@ -10,7 +10,7 @@ import EntrancePrompt from "./EntrancePrompt";
 import PortalPrompt from "./PortalPrompt";
 import GatePrompt from "./GatePrompt";
 import BoundaryDialogue from "./BoundaryDialogue";
-import InteriorWorld from "./InteriorWorld";
+import InventoryHUD from "./inventory/InventoryHUD";
 import {
   useGameStore,
   getGameState,
@@ -172,6 +172,47 @@ function XKeyHandler() {
   return null;
 }
 
+// ─── Dynamic Sun Shadows ───
+// Makes the shadow map follow the player so we don't need a huge, blurry 2048x2048 texture
+// covering the entire map
+function DynamicSun({ playerPosRef }: { playerPosRef: React.MutableRefObject<THREE.Vector3> }) {
+  const lightRef = useRef<THREE.DirectionalLight>(null!);
+
+  useFrame(() => {
+    if (lightRef.current && playerPosRef.current) {
+      // Offset light position relative to player
+      lightRef.current.position.set(
+        playerPosRef.current.x + 15,
+        playerPosRef.current.y + 30,
+        playerPosRef.current.z + 10
+      );
+      // Follow player exactly
+      lightRef.current.target.position.copy(playerPosRef.current);
+      lightRef.current.target.updateMatrixWorld();
+    }
+  });
+
+  return (
+    <directionalLight
+      ref={lightRef}
+      intensity={1.8}
+      color="#b0c0ff"
+      castShadow
+      // Drastically lower map size because frustum is small!
+      shadow-mapSize-width={512}
+      shadow-mapSize-height={512}
+      // Very tight box around player
+      shadow-camera-left={-20}
+      shadow-camera-right={20}
+      shadow-camera-top={20}
+      shadow-camera-bottom={-20}
+      shadow-camera-near={0.5}
+      shadow-camera-far={60}
+      shadow-bias={-0.0005}
+    />
+  );
+}
+
 // ─── Scene ───────────────────────────────────────────────
 export default function Scene() {
   const keys = useRef<Record<string, boolean>>({});
@@ -204,6 +245,7 @@ export default function Scene() {
     <div style={{ width: "100vw", height: "100vh", background: "#0a0a0f" }}>
       <Canvas
         shadows
+        dpr={[1, 2]}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
@@ -212,7 +254,7 @@ export default function Scene() {
         camera={{
           fov: 48,
           near: 0.1,
-          far: 200,
+          far: 120,
           position: [0, 14, 18],
         }}
       >
@@ -231,22 +273,8 @@ export default function Scene() {
               {/* Ambient */}
               <ambientLight intensity={0.5} color="#4a4a65" />
 
-              {/* Moonlight */}
-              <directionalLight
-                position={[15, 30, 10]}
-                intensity={1.8}
-                color="#b0c0ff"
-                castShadow
-                shadow-mapSize-width={2048}
-                shadow-mapSize-height={2048}
-                shadow-camera-left={-35}
-                shadow-camera-right={35}
-                shadow-camera-top={35}
-                shadow-camera-bottom={-35}
-                shadow-camera-near={0.5}
-                shadow-camera-far={100}
-                shadow-bias={-0.0003}
-              />
+              {/* Dynamic Moonlight focusing shadows only on player */}
+              <DynamicSun playerPosRef={playerPosRef} />
 
               {/* Rim light */}
               <directionalLight
@@ -270,7 +298,7 @@ export default function Scene() {
               />
 
               {/* World */}
-              <World />
+              <World playerPosRef={playerPosRef} />
 
               {/* Entrance prompt */}
               <EntrancePrompt />
@@ -293,11 +321,15 @@ export default function Scene() {
           )}
 
           {/* ═══════════════════════════════════════════════
-             INTERIOR MODE (2D profile room)
+             INTERIOR MODE (To be implemented modularly)
            ═══════════════════════════════════════════════ */}
-          {isInterior && <InteriorWorld keys={keys} />}
+          {/* Portfolio and Game interior instances will be injected here */}
+
         </Suspense>
       </Canvas>
+
+      {/* ─── Inventory HUD (HTML overlay) ─── */}
+      {isExplore && <InventoryHUD />}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import DayWorld from "./DayWorld";
 import DayPlayer from "./DayPlayer";
 import CameraController from "../CameraController";
 import BoundaryDialogue from "../BoundaryDialogue";
+import InventoryHUD from "../inventory/InventoryHUD";
+import { useGameStore } from "../useGameStore";
 
 // ─── Daytime Fog ───
 function DayFogManager() {
@@ -25,7 +27,10 @@ function DayFogManager() {
 }
 
 // ─── Portal Prompt (same style, shows near back fence portal) ───
-function DayPortalPrompt({ visible }: { visible: boolean }) {
+function DayPortalPrompt() {
+    const visible = useGameStore((s) => s.isNearDayPortal);
+    const gameMode = useGameStore((s) => s.gameMode);
+
     const promptRef = useRef<THREE.Mesh>(null!);
     const titleRef = useRef<THREE.Mesh>(null!);
     const opacity = useRef(0);
@@ -56,13 +61,13 @@ function DayPortalPrompt({ visible }: { visible: boolean }) {
                     ref={titleRef}
                     fontSize={0.65}
                     letterSpacing={0.2}
-                    color="#ffffffff"
+                    color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
                     material-transparent
                     material-opacity={0.85}
                 >
-                    THE HALL OF SKILLS
+                    THE HALL OF LIGHT
                 </Text>
             </Billboard>
 
@@ -78,7 +83,7 @@ function DayPortalPrompt({ visible }: { visible: boolean }) {
                     ref={promptRef}
                     fontSize={0.42}
                     letterSpacing={0.15}
-                    color="#2a3a2a"
+                    color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
                     material-transparent
@@ -101,29 +106,36 @@ const DAY_GATE_POSITIONS: [number, number, number][] = [
 
 function SingleDayGatePrompt({
     position,
-    visible,
     playerPosRef,
 }: {
     position: [number, number, number];
-    visible: boolean;
     playerPosRef: React.RefObject<THREE.Vector3>;
 }) {
+    const isNearDayGate = useGameStore((s) => s.isNearDayGate);
+    const isDayCrossingGate = useGameStore((s) => s.isDayCrossingGate);
+    const gameMode = useGameStore((s) => s.gameMode);
+
     const textRef = useRef<THREE.Mesh>(null!);
     const opacity = useRef(0);
+    // Reusable objects for distance check to avoid per-frame allocation
+    const playerFlat = useRef(new THREE.Vector3());
+    const gateFlat = useRef(new THREE.Vector3());
+    const otherFlat = useRef(new THREE.Vector3());
 
     useFrame((_, delta) => {
         let isClosest = false;
+        const visible = isNearDayGate && !isDayCrossingGate && gameMode === "explore";
 
         if (visible && playerPosRef.current) {
-            const playerFlat = new THREE.Vector3(playerPosRef.current.x, 0, playerPosRef.current.z);
-            const thisGateFlat = new THREE.Vector3(position[0], 0, position[2]);
-            const thisDist = playerFlat.distanceTo(thisGateFlat);
+            playerFlat.current.set(playerPosRef.current.x, 0, playerPosRef.current.z);
+            gateFlat.current.set(position[0], 0, position[2]);
+            const thisDist = playerFlat.current.distanceTo(gateFlat.current);
 
             isClosest = true;
             for (const gp of DAY_GATE_POSITIONS) {
                 if (gp === position) continue;
-                const otherFlat = new THREE.Vector3(gp[0], 0, gp[2]);
-                if (playerFlat.distanceTo(otherFlat) < thisDist) {
+                otherFlat.current.set(gp[0], 0, gp[2]);
+                if (playerFlat.current.distanceTo(otherFlat.current) < thisDist) {
                     isClosest = false;
                     break;
                 }
@@ -146,7 +158,7 @@ function SingleDayGatePrompt({
                 ref={textRef}
                 fontSize={0.42}
                 letterSpacing={0.12}
-                color="#2a3a2a"
+                color="#ffffff"
                 anchorX="center"
                 anchorY="middle"
                 material-transparent
@@ -158,18 +170,20 @@ function SingleDayGatePrompt({
     );
 }
 
-function DayGatePrompt({ visible, playerPosRef }: { visible: boolean; playerPosRef: React.RefObject<THREE.Vector3> }) {
+function DayGatePrompt({ playerPosRef }: { playerPosRef: React.RefObject<THREE.Vector3> }) {
     return (
         <group>
             {DAY_GATE_POSITIONS.map((pos, i) => (
-                <SingleDayGatePrompt key={i} position={pos} visible={visible} playerPosRef={playerPosRef} />
+                <SingleDayGatePrompt key={i} position={pos} playerPosRef={playerPosRef} />
             ))}
         </group>
     );
 }
 
 // ─── X Key Handler for daytime — only portal return ───
-function DayXKeyHandler({ isNearPortal }: { isNearPortal: boolean }) {
+function DayXKeyHandler() {
+    const isNearPortal = useGameStore((s) => s.isNearDayPortal);
+    // Use a ref so the effect doesn't need to rebind on every proximity change
     const nearRef = useRef(isNearPortal);
     nearRef.current = isNearPortal;
 
@@ -190,12 +204,49 @@ function DayXKeyHandler({ isNearPortal }: { isNearPortal: boolean }) {
     return null;
 }
 
+// ─── Dynamic Day Sun ───
+// Optimizes shadow rendering by only calculating shadows around the player
+function DynamicDaySun({ playerPosRef }: { playerPosRef: React.MutableRefObject<THREE.Vector3> }) {
+    const lightRef = useRef<THREE.DirectionalLight>(null!);
+
+    useFrame(() => {
+        if (lightRef.current && playerPosRef.current) {
+            // High angle, bright daylight position offset
+            lightRef.current.position.set(
+                playerPosRef.current.x + 20,
+                playerPosRef.current.y + 40,
+                playerPosRef.current.z + 15
+            );
+            lightRef.current.target.position.copy(playerPosRef.current);
+            lightRef.current.target.updateMatrixWorld();
+        }
+    });
+
+    return (
+        <directionalLight
+            ref={lightRef}
+            intensity={3.5}
+            color="#fff5dd"
+            castShadow
+            // Much smaller map needed!
+            shadow-mapSize-width={512}
+            shadow-mapSize-height={512}
+            // Tight bounds around player
+            shadow-camera-left={-20}
+            shadow-camera-right={20}
+            shadow-camera-top={20}
+            shadow-camera-bottom={-20}
+            shadow-camera-near={0.5}
+            shadow-camera-far={80}
+            shadow-bias={-0.0003}
+        />
+    );
+}
+
 // ─── Main Daytime Scene ───
 export default function DayScene() {
     const keys = useRef<Record<string, boolean>>({});
     const playerPosRef = useRef(new THREE.Vector3(0, 0.6, 8));
-    const [isNearPortal, setIsNearPortal] = useState(false);
-    const [isNearGate, setIsNearGate] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -213,18 +264,11 @@ export default function DayScene() {
         };
     }, []);
 
-    const handleNearPortal = useCallback((near: boolean) => {
-        setIsNearPortal(near);
-    }, []);
-
-    const handleNearGate = useCallback((near: boolean) => {
-        setIsNearGate(near);
-    }, []);
-
     return (
         <div style={{ width: "100vw", height: "100vh", background: "#87CEEB" }}>
             <Canvas
                 shadows
+                dpr={[1, 2]}
                 gl={{
                     antialias: true,
                     toneMapping: THREE.ACESFilmicToneMapping,
@@ -233,12 +277,12 @@ export default function DayScene() {
                 camera={{
                     fov: 48,
                     near: 0.1,
-                    far: 150,
+                    far: 130,
                     position: [0, 14, 18],
                 }}
             >
                 {/* Global systems */}
-                <DayXKeyHandler isNearPortal={isNearPortal} />
+                <DayXKeyHandler />
                 <DayFogManager />
 
                 <Suspense fallback={null}>
@@ -248,22 +292,8 @@ export default function DayScene() {
                         {/* Bright ambient */}
                         <ambientLight intensity={2.0} color="#fffbe6" />
 
-                        {/* Sunlight — warm directional */}
-                        <directionalLight
-                            position={[20, 40, 15]}
-                            intensity={3.5}
-                            color="#fff5dd"
-                            castShadow
-                            shadow-mapSize-width={1024}
-                            shadow-mapSize-height={1024}
-                            shadow-camera-left={-35}
-                            shadow-camera-right={35}
-                            shadow-camera-top={35}
-                            shadow-camera-bottom={-35}
-                            shadow-camera-near={0.5}
-                            shadow-camera-far={80}
-                            shadow-bias={-0.0003}
-                        />
+                        {/* Sunlight — warm dynamic directional following player */}
+                        <DynamicDaySun playerPosRef={playerPosRef} />
 
                         {/* Hemisphere light — blue sky, green ground */}
                         <hemisphereLight
@@ -273,23 +303,21 @@ export default function DayScene() {
                         />
 
                         {/* World */}
-                        <DayWorld />
+                    <DayWorld playerPosRef={playerPosRef} />
 
                         {/* Portal prompt & building title */}
-                        <DayPortalPrompt visible={isNearPortal} />
+                        <DayPortalPrompt />
 
                         {/* Gate prompt */}
-                        <DayGatePrompt visible={isNearGate} playerPosRef={playerPosRef} />
+                        <DayGatePrompt playerPosRef={playerPosRef} />
 
                         {/* Boundary dialogue */}
-                        <BoundaryDialogue playerPosRef={playerPosRef} color="#2a3a2a" />
+                        <BoundaryDialogue playerPosRef={playerPosRef} color="#ffffff" />
 
                         {/* Player — no flashlight */}
                         <DayPlayer
                             positionRef={playerPosRef}
                             keys={keys}
-                            onNearPortal={handleNearPortal}
-                            onNearGate={handleNearGate}
                         />
 
                         {/* Camera Controller (reused from night world) */}
@@ -297,6 +325,9 @@ export default function DayScene() {
                     </group>
                 </Suspense>
             </Canvas>
+
+            {/* ─── Inventory HUD (HTML overlay) ─── */}
+            <InventoryHUD />
         </div>
     );
 }

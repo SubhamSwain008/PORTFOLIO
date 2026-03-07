@@ -59,7 +59,7 @@ export default function EntrancePrompt() {
                     material-transparent
                     material-opacity={0.85}
                 >
-                    THE HALL OF IDENTITY
+                    THE HALL OF NIGHT
                 </Text>
             </Billboard>
 

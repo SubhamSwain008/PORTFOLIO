@@ -5,11 +5,11 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { DAY_ENV_PROPS } from "../../lib/dayEnvironment";
 
+import { getGameState, setGameState } from "../useGameStore";
+
 interface DayPlayerProps {
     positionRef: React.MutableRefObject<THREE.Vector3>;
     keys: React.MutableRefObject<Record<string, boolean>>;
-    onNearPortal?: (near: boolean) => void;
-    onNearGate?: (near: boolean) => void;
 }
 
 // ─── Shared materials — daytime-appropriate colors ───
@@ -39,7 +39,7 @@ const hairMat = new THREE.MeshStandardMaterial({
     metalness: 0.0,
 });
 
-export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate }: DayPlayerProps) {
+export default function DayPlayer({ positionRef, keys }: DayPlayerProps) {
     const groupRef = useRef<THREE.Group>(null!);
     const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
@@ -58,8 +58,6 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
     const SPEED = 7;
     const PORTAL_POS = new THREE.Vector3(-10, 0, -44.9);
     const ENTRANCE_RADIUS = 4;
-    const wasNearPortal = useRef(false);
-    const wasNearGate = useRef(false);
 
     // ─── Fence gate positions (center of each side) ───
     const GATE_POSITIONS = [
@@ -71,14 +69,13 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
     const GATE_DETECT_RADIUS = 4;
     const gateCrossingTarget = useRef<THREE.Vector3 | null>(null);
     const gateCrossingDir = useRef<THREE.Vector3>(new THREE.Vector3());
-    const isCrossingGate = useRef(false);
-    const isNearGateRef = useRef(false);
-
     useFrame((_, delta) => {
         if (!groupRef.current) return;
 
+        const state = getGameState();
+
         // ─── Auto-walk through gate ───
-        if (isCrossingGate.current && gateCrossingTarget.current) {
+        if (state.isDayCrossingGate && gateCrossingTarget.current) {
             const target = gateCrossingTarget.current;
             const dir = gateCrossingDir.current;
             const pos = groupRef.current.position;
@@ -97,10 +94,8 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
             const toTarget = new THREE.Vector3().subVectors(target, pos);
             const dot = toTarget.dot(dir);
             if (dot <= 0) {
-                isCrossingGate.current = false;
-                isNearGateRef.current = false;
+                setGameState({ isDayCrossingGate: false, isNearDayGate: false });
                 gateCrossingTarget.current = null;
-                onNearGate?.(false);
             }
 
             positionRef.current.copy(groupRef.current.position);
@@ -311,9 +306,8 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
         // ─── Portal proximity detection ───
         const portalDist = groupRef.current.position.distanceTo(PORTAL_POS);
         const nearPortal = portalDist < ENTRANCE_RADIUS;
-        if (nearPortal !== wasNearPortal.current) {
-            wasNearPortal.current = nearPortal;
-            onNearPortal?.(nearPortal);
+        if (nearPortal !== state.isNearDayPortal) {
+            setGameState({ isNearDayPortal: nearPortal });
         }
 
         // ─── Gate proximity detection ───
@@ -325,9 +319,8 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
                 break;
             }
         }
-        if (nearAnyGate !== isNearGateRef.current && !isCrossingGate.current) {
-            isNearGateRef.current = nearAnyGate;
-            onNearGate?.(nearAnyGate);
+        if (nearAnyGate !== state.isNearDayGate && !state.isDayCrossingGate) {
+            setGameState({ isNearDayGate: nearAnyGate });
         }
     });
 
@@ -335,7 +328,8 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
     useEffect(() => {
         const handleGateKey = (e: KeyboardEvent) => {
             if (e.key.toLowerCase() !== "x" || e.repeat) return;
-            if (!isNearGateRef.current || isCrossingGate.current) return;
+            const currentState = getGameState();
+            if (!currentState.isNearDayGate || currentState.isDayCrossingGate) return;
 
             let closestGate = GATE_POSITIONS[0];
             let closestDist = Infinity;
@@ -355,7 +349,7 @@ export default function DayPlayer({ positionRef, keys, onNearPortal, onNearGate 
 
             gateCrossingTarget.current = playerPos.clone().add(crossDir.clone().multiplyScalar(6));
             gateCrossingDir.current.copy(crossDir);
-            isCrossingGate.current = true;
+            setGameState({ isDayCrossingGate: true });
         };
 
         window.addEventListener("keydown", handleGateKey);

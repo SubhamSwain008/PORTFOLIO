@@ -3,17 +3,39 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { useTexture, useVideoTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import ProfileBuilding from "../ProfileBuilding";
 import { DAY_ENV_PROPS } from "../../lib/dayEnvironment";
 import { InstancedDayTrees, InstancedDayRocks, InstancedDayFencePerimeter } from "./InstancedDayEnv";
+import WorldItems from "../inventory/WorldItems";
 
-export default function DayWorld() {
+interface DayWorldProps {
+  playerPosRef?: React.MutableRefObject<THREE.Vector3>;
+}
+
+export default function DayWorld({ playerPosRef }: DayWorldProps) {
     const grassTexture = useTexture("/assets/grass.png");
     const portalVideo = useVideoTexture("/assets/portal.mp4", {
         muted: true,
         loop: true,
         start: true,
         crossOrigin: "anonymous",
+    });
+
+    // Optimize: Pause the video when player is far away
+    useFrame(({ camera }) => {
+        if (!portalVideo || !portalVideo.image) return;
+
+        // Distance from camera to portal
+        const dist = camera.position.distanceToSquared(new THREE.Vector3(-10, 0, -44.9));
+        const video = portalVideo.image as HTMLVideoElement;
+
+        // 60 units squared = 3600
+        if (dist > 1800 && !video.paused) {
+            video.pause();
+        } else if (dist <= 1800 && video.paused) {
+            video.play();
+        }
     });
 
     const texBase = useMemo(() => {
@@ -126,6 +148,9 @@ export default function DayWorld() {
                     decay={2}
                 />
             </group>
-        </group>
+
+        {/* ─── Collectible Items ─── */}
+        {playerPosRef && <WorldItems playerPosRef={playerPosRef} realm="day" />}
+      </group>
     );
 }
