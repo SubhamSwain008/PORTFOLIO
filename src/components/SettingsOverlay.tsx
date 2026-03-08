@@ -28,19 +28,32 @@ export default function SettingsOverlay() {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  if (appPhase !== "game") return null;
+  if (appPhase !== "game") {
+    // Also allow rendering on realm page (which doesn't go through session phases)
+    // Check if we're on the realm page by looking for the day-audio element
+    const onRealmPage = typeof document !== "undefined" && document.getElementById("day-audio");
+    if (!onRealmPage) return null;
+  }
 
   const handleMusicToggle = () => {
     const next = !getSessionState().musicEnabled;
     setSessionState({ musicEnabled: next });
-    const audio = document.getElementById(
-      "night-audio"
-    ) as HTMLAudioElement | null;
-    if (audio) {
-      if (next) {
-        audio.play().catch(() => {});
-      } else {
-        audio.pause();
+    
+    // Persist user preference
+    if (typeof window !== "undefined") {
+      localStorage.setItem("musicEnabled", String(next));
+    }
+
+    // Toggle both possible audio elements (only one will exist per page)
+    const nightAudio = document.getElementById("night-audio") as HTMLAudioElement | null;
+    const dayAudio = document.getElementById("day-audio") as HTMLAudioElement | null;
+    for (const audio of [nightAudio, dayAudio]) {
+      if (audio) {
+        if (next) {
+          audio.play().catch(() => {});
+        } else {
+          audio.pause();
+        }
       }
     }
   };

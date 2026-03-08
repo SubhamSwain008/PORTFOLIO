@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { CollectedItem, SpawnedItem, ITEM_REGISTRY, getItemDef } from "./types";
+import { setSavingStatus } from "../SaveIndicator";
 
 // ─── Inventory State ─────────────────────────────────────
 export interface InventoryState {
@@ -79,6 +80,17 @@ export function collectItem(itemId: string, realm: string, spawnId: string) {
     items: newItems,
     worldItems: { ...current.worldItems, [realm]: newRealmItems },
   });
+
+  // Fire-and-forget: save to DB (non-blocking)
+  const collected = newItems.find((i) => i.itemId === itemId);
+  if (collected) {
+    setSavingStatus("Saving…");
+    fetch("/api/game/save-item", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId, quantity: collected.quantity }),
+    }).catch(() => {}); // silent fail — don't break the game
+  }
 }
 
 // ─── Get collected count for an item ─────────────────────

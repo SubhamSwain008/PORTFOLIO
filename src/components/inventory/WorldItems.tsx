@@ -16,9 +16,9 @@ interface WorldItemsProps {
   playerPosRef: React.MutableRefObject<THREE.Vector3>;
   realm: "night" | "day";
 }
-
 const COLLECT_RADIUS = 3.5;
 const MODEL_RADIUS_SQ = 22 * 22;  // show full 3D model within 22 units
+const VISIBILITY_RADIUS_SQ = 35 * 35; // completely hide beyond 35 units
 
 // Reusable objects
 const tempObject = new THREE.Object3D();
@@ -126,7 +126,14 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
       const dz = pz - si.position[2];
       const distSq = dx * dx + dz * dz;
 
-      if (distSq < MODEL_RADIUS_SQ) {
+      if (distSq > VISIBILITY_RADIUS_SQ) {
+        // ─── VERY FAR: completely hide the item and its glow ───
+        tempObject.position.set(0, -1000, 0);
+        tempObject.scale.set(0, 0, 0);
+        tempObject.updateMatrix();
+        indicatorRef.current.setMatrixAt(i, tempObject.matrix);
+        if (ringRef.current) ringRef.current.setMatrixAt(i, tempObject.matrix);
+      } else if (distSq < MODEL_RADIUS_SQ) {
         // ─── NEAR: hide the indicator (the 3D model replaces it) ───
         tempObject.position.set(0, -1000, 0);
         tempObject.scale.set(0, 0, 0);
@@ -145,7 +152,7 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
           }
         }
       } else {
-        // ─── FAR: show as glowing indicator orb + ring ───
+        // ─── FAR (but visible): show as glowing indicator orb + ring ───
         const phase = i * 2.37 + time * 2.0;
         const bobY = 0.6 + Math.sin(phase) * 0.15;
 

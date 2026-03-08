@@ -10,13 +10,16 @@ import CameraController from "../CameraController";
 import BoundaryDialogue from "../BoundaryDialogue";
 import InventoryHUD from "../inventory/InventoryHUD";
 import { useGameStore } from "../useGameStore";
+import PositionAutoSave from "../PositionAutoSave";
+import { MiniMap, MiniMapLogic } from "../MiniMap";
+import StaminaBar from "../StaminaBar";
 
 // ─── Daytime Fog ───
 function DayFogManager() {
     const { scene } = useThree();
 
     useEffect(() => {
-        scene.fog = new THREE.Fog("#c0daf0", 50, 130);
+        scene.fog = new THREE.Fog("#c0daf0", 16, 45);
         scene.background = new THREE.Color("#87CEEB");
         return () => {
             scene.fog = null;
@@ -73,7 +76,7 @@ function DayPortalPrompt() {
 
             {/* Portal return prompt */}
             <Billboard
-                position={[-10, 2.5, PORTAL_Z + 2]}
+                position={[0, 5.5, -5.5]}
                 follow
                 lockX={false}
                 lockY={false}
@@ -192,7 +195,7 @@ function DayXKeyHandler() {
             if (e.key.toLowerCase() === "x" && !e.repeat) {
                 if (nearRef.current) {
                     // Navigate back to night world — full page reload frees all day world memory
-                    window.location.href = "/";
+                    window.location.href = "/?portal=true";
                 }
             }
         };
@@ -247,6 +250,7 @@ function DynamicDaySun({ playerPosRef }: { playerPosRef: React.MutableRefObject<
 export default function DayScene() {
     const keys = useRef<Record<string, boolean>>({});
     const playerPosRef = useRef(new THREE.Vector3(0, 0.6, 8));
+    const playerAngleRef = useRef(0);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -281,9 +285,9 @@ export default function DayScene() {
                     position: [0, 14, 18],
                 }}
             >
-                {/* Global systems */}
                 <DayXKeyHandler />
                 <DayFogManager />
+                <MiniMapLogic playerPosRef={playerPosRef} />
 
                 <Suspense fallback={null}>
                     <group>
@@ -318,16 +322,24 @@ export default function DayScene() {
                         <DayPlayer
                             positionRef={playerPosRef}
                             keys={keys}
+                            angleRef={playerAngleRef}
                         />
 
                         {/* Camera Controller (reused from night world) */}
-                        <CameraController targetRef={playerPosRef} />
+                        <CameraController targetRef={playerPosRef} angleRef={playerAngleRef} />
                     </group>
                 </Suspense>
             </Canvas>
 
             {/* ─── Inventory HUD (HTML overlay) ─── */}
             <InventoryHUD />
+
+            {/* ─── Position auto-save (login mode only) ─── */}
+            <PositionAutoSave playerPosRef={playerPosRef} world="day" />
+
+            {/* ─── HUD Overlay ─── */}
+            <MiniMap />
+            <StaminaBar />
         </div>
     );
 }

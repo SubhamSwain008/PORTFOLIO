@@ -11,11 +11,16 @@ import PortalPrompt from "./PortalPrompt";
 import GatePrompt from "./GatePrompt";
 import BoundaryDialogue from "./BoundaryDialogue";
 import InventoryHUD from "./inventory/InventoryHUD";
+import SaveIndicator, { setSavingStatus } from "./SaveIndicator";
+import { getSessionState } from "./useSessionStore";
 import {
   useGameStore,
   getGameState,
   setGameState,
 } from "./useGameStore";
+import PositionAutoSave from "./PositionAutoSave";
+import { MiniMap, MiniMapLogic } from "./MiniMap";
+import StaminaBar from "./StaminaBar";
 
 // ─── Fog Manager (scene-level fog toggle) ────────────────
 function FogManager() {
@@ -25,7 +30,7 @@ function FogManager() {
   useFrame(() => {
     if (gameMode === "explore" || gameMode === "transitioning-in" || gameMode === "transitioning-out") {
       if (!scene.fog || (scene.fog as THREE.Fog).color.getHexString() !== "12141c") {
-        scene.fog = new THREE.Fog("#12141c", 40, 120);
+        scene.fog = new THREE.Fog("#12141c", 12, 70);
         scene.background = new THREE.Color("#12141c");
       }
     } else {
@@ -135,7 +140,7 @@ function XKeyHandler() {
 
         if (state.gameMode === "explore" && state.isNearPortal) {
           // Navigate to the daytime realm — full page nav frees night world memory
-          window.location.href = "/realm";
+          window.location.href = "/realm?portal=true";
           return;
         } else if (state.gameMode === "explore" && state.isNearEntrance) {
           setGameState({ gameMode: "transitioning-in", transitionProgress: 0 });
@@ -218,6 +223,7 @@ export default function Scene() {
   const keys = useRef<Record<string, boolean>>({});
   // Zero-render camera synchronization using mutable ref
   const playerPosRef = useRef(new THREE.Vector3(0, 0.6, 8));
+  const playerAngleRef = useRef(0);
   const gameMode = useGameStore((s) => s.gameMode);
 
   useEffect(() => {
@@ -258,10 +264,10 @@ export default function Scene() {
           position: [0, 14, 18],
         }}
       >
-        {/* ─── Global systems ─── */}
         <XKeyHandler />
         <FogManager />
         <FadeOverlay />
+        <MiniMapLogic playerPosRef={playerPosRef} />
 
         <Suspense fallback={null}>
 
@@ -313,10 +319,10 @@ export default function Scene() {
               <BoundaryDialogue playerPosRef={playerPosRef} />
 
               {/* Player */}
-              <Player positionRef={playerPosRef} keys={keys} />
+              <Player positionRef={playerPosRef} keys={keys} angleRef={playerAngleRef} />
 
               {/* Camera Controller */}
-              <CameraController targetRef={playerPosRef} />
+              <CameraController targetRef={playerPosRef} angleRef={playerAngleRef} />
             </group>
           )}
 
@@ -330,6 +336,16 @@ export default function Scene() {
 
       {/* ─── Inventory HUD (HTML overlay) ─── */}
       {isExplore && <InventoryHUD />}
+
+      {/* ─── Position auto-save (login mode only) ─── */}
+      <PositionAutoSave playerPosRef={playerPosRef} world="night" />
+
+      {/* ─── Save indicator ─── */}
+      <SaveIndicator />
+
+      {/* ─── HUD Overlay ─── */}
+      {isExplore && <MiniMap />}
+      <StaminaBar />
     </div>
   );
 }

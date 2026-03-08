@@ -16,22 +16,21 @@ model User {
   otp_expires DateTime? @db.Timestamptz
   created_at  DateTime  @default(now()) @db.Timestamptz
 
+  gameState   UserGameState?
+
   @@map("users")
 }
-enum InventoryItemType {
-  WEAPON
-  ARMOR
-  POTION
-  MISC
-}
-model InventoryItem {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  quantity    Int       @default(0)
-  type        InventoryItemType?
-  created_at  DateTime  @default(now()) @db.Timestamptz
-  updated_at  DateTime  @updatedAt @db.Timestamptz
 
-  @@map("inventory_items")
+model UserGameState {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory   Json     @default("[]")
+  positionX   Float    @default(0)
+  positionY   Float    @default(1.3)
+  positionZ   Float    @default(8)
+  currentWorld String  @default("night")
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  @@map("user_game_state")
 }

@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import SettingsOverlay from "@/components/SettingsOverlay";
+import SaveIndicator from "@/components/SaveIndicator";
+import { useSessionStore, setSessionState, getSessionState, initSession } from "@/components/useSessionStore";
+import { setInventoryState } from "@/components/inventory/inventory";
 
 const DayScene = dynamic(() => import("@/components/day/DayScene"), {
     ssr: false,
@@ -9,8 +13,48 @@ const DayScene = dynamic(() => import("@/components/day/DayScene"), {
 });
 
 export default function RealmPage() {
+    const appPhase = useSessionStore((s) => s.appPhase);
+    const musicEnabled = useSessionStore((s) => s.musicEnabled);
     const [loading, setLoading] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
+
+    // Initialize session (loads user + inventory from DB)
+    useEffect(() => {
+        async function loadGameData() {
+            // If session is already initialized (coming from night world), just load inventory
+            const session = getSessionState();
+            if (session.userEmail) {
+                // Already have a session, just fetch inventory
+                try {
+                    const gameRes = await fetch("/api/game/load");
+                    if (gameRes.ok) {
+                        const gameData = await gameRes.json();
+                        if (gameData.ok && gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
+                            setInventoryState({ items: gameData.inventory });
+                        }
+                    }
+                } catch {
+                    // silent fail
+                }
+                setSessionState({ appPhase: "game", gameDataLoaded: true });
+            } else {
+                // Full page load — run full init
+                await initSession();
+            }
+        }
+        loadGameData();
+    }, []);
+
+    // Also handle redirect to login page if unauthenticated
+    useEffect(() => {
+        if (appPhase === "mode-select" || appPhase === "login") {
+            const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
+            // Actually, if not logged in, just go to root `/` for login screen
+            if (!getSessionState().userEmail) {
+                window.location.href = "/";
+            }
+        }
+    }, [appPhase]);
 
     useEffect(() => {
         // Minimum loading screen display time for smooth transition
@@ -21,7 +65,34 @@ export default function RealmPage() {
         }, 2500);
 
         return () => clearTimeout(minTimer);
-    }, []);
+    }, [appPhase]);
+
+    if (appPhase !== "game") {
+        return (
+            <div
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #87CEEB 100%)",
+                }}
+            >
+                <div
+                    style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        border: "2px solid transparent",
+                        borderTopColor: "#9a6aff",
+                        animation: "spin 1s linear infinite",
+                    }}
+                />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -126,6 +197,43 @@ export default function RealmPage() {
 
             {/* 3D Scene — renders behind loading overlay */}
             <DayScene />
+
+            {/* Settings overlay — top-right (username + gear) */}
+            <SettingsOverlay />
+
+            {/* Save indicator — bottom-right */}
+            <SaveIndicator />
+
+            {/* Hidden Day Audio — separate track from night world */}
+            <audio
+                id="day-audio"
+                src="https://storage.googleapis.com/udio-artifacts-c33fe3ba-3ffe-471f-92c8-5dfef90b3ea3/samples/526b313d6583430dbdc9c70235942355/1/The%2520Untitled.mp3"
+                loop
+                autoPlay={musicEnabled}
+                style={{ display: "none" }}
+            />
+            <DayInteractionUnlocker />
         </>
     );
 }
+
+// Helper to unlock audio on first interaction (browsers block autoplay until interaction)
+function DayInteractionUnlocker() {
+    useEffect(() => {
+        const unlock = () => {
+            if (!getSessionState().musicEnabled) return;
+            const audio = document.getElementById("day-audio") as HTMLAudioElement | null;
+            if (audio) {
+                audio.play().catch(() => {});
+            }
+        };
+        window.addEventListener("click", unlock);
+        window.addEventListener("keydown", unlock);
+        return () => {
+            window.removeEventListener("click", unlock);
+            window.removeEventListener("keydown", unlock);
+        };
+    }, []);
+    return null;
+}
+

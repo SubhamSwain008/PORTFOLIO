@@ -4,11 +4,15 @@ import { useRef, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getGameState, setGameState, useGameStore } from "./useGameStore";
+import { useSearchParams } from "next/navigation";
+import { getSessionState } from "./useSessionStore";
+import { getStaminaState, setStaminaState } from "./useStaminaStore";
 import { ENV_PROPS } from "../lib/environment";
 
 interface PlayerProps {
   positionRef: React.MutableRefObject<THREE.Vector3>;
   keys: React.MutableRefObject<Record<string, boolean>>;
+  angleRef?: React.MutableRefObject<number>;
 }
 
 // ─── Shared materials (created once, reused) ───
@@ -40,7 +44,7 @@ const hairMat = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
-export default function Player({ positionRef, keys }: PlayerProps) {
+export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const velocity = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
@@ -68,7 +72,7 @@ export default function Player({ positionRef, keys }: PlayerProps) {
   // Door position (front face of building)
   const DOOR_POS = new THREE.Vector3(0, 0, 4.5);
   // Portal Door position (back face fence)
-  const PORTAL_POS = new THREE.Vector3(-10, 0, -44.9);
+  const PORTAL_POS = new THREE.Vector3(0, 0, -4.01);
   const ENTRANCE_RADIUS = 4;
 
   // ─── Fence gate positions (center of each side) ───
@@ -173,35 +177,81 @@ export default function Player({ positionRef, keys }: PlayerProps) {
 
     // --- Movement direction ---
     direction.current.set(0, 0, 0);
-    if (keys.current["w"] || keys.current["arrowup"]) direction.current.z -= 1;
-    if (keys.current["s"] || keys.current["arrowdown"]) direction.current.z += 1;
-    if (keys.current["a"] || keys.current["arrowleft"]) direction.current.x -= 1;
-    if (keys.current["d"] || keys.current["arrowright"]) direction.current.x += 1;
+    const ROT_SPEED = 2.5; // Radians per second
+
+    // Handle Rotation (A/D)
+    if (keys.current["a"] || keys.current["arrowleft"]) {
+      currentAngle.current += ROT_SPEED * delta;
+    }
+    if (keys.current["d"] || keys.current["arrowright"]) {
+      currentAngle.current -= ROT_SPEED * delta;
+    }
+
+    // Keep angle within 0 - 2PI range
+    while (currentAngle.current > Math.PI * 2) currentAngle.current -= Math.PI * 2;
+    while (currentAngle.current < 0) currentAngle.current += Math.PI * 2;
+
+    // Apply visual rotation immediately
+    groupRef.current.rotation.y = currentAngle.current;
+
+    // Handle Forward/Backward Momentum (W/S)
+    let moveIntensity = 0;
+    if (keys.current["w"] || keys.current["arrowup"]) moveIntensity = 1;
+    if (keys.current["s"] || keys.current["arrowdown"]) moveIntensity = -0.5; // Backpedal slower
+
+    if (moveIntensity !== 0) {
+      // Calculate trig vector based on current facing angle
+      direction.current.x = Math.sin(currentAngle.current) * moveIntensity;
+      direction.current.z = Math.cos(currentAngle.current) * moveIntensity;
+    }
 
     const ACCEL_RATE = 12;
     const DECEL_RATE = 10;
     const ROT_RATE = 15;
 
     const hasInput = direction.current.length() > 0;
+    let isSprinting = false;
 
     if (hasInput) {
       direction.current.normalize();
       isMoving.current = true;
 
-      const targetVX = direction.current.x * SPEED;
-      const targetVZ = direction.current.z * SPEED;
+      // --- Stamina Logic ---
+      const staminaState = getStaminaState();
+      let currentStamina = staminaState.stamina;
+
+      if (keys.current["shift"] && currentStamina > 0) {
+        // Sprinting: Double speed, drain 100 stamina in 10s (10 units/sec)
+        isSprinting = true;
+        currentStamina = Math.max(0, currentStamina - 10 * delta);
+        setStaminaState({ stamina: currentStamina, isSprinting: true });
+      } else {
+        // Normal walking: 1x speed
+        if (keys.current["shift"]) {
+          if (staminaState.isSprinting) {
+            setStaminaState({ isSprinting: false });
+          }
+        } else {
+          // Refill 100 stamina in 60s (1.66 units/sec)
+          if (currentStamina < 100) {
+            currentStamina = Math.min(100, currentStamina + (100 / 60) * delta);
+            setStaminaState({ stamina: currentStamina, isSprinting: false });
+          } else if (staminaState.isSprinting) {
+            setStaminaState({ isSprinting: false });
+          }
+        }
+      }
+
+      let speedMultiplier = 1.0;
+      if (isSprinting) {
+        speedMultiplier = 1.0 + (currentStamina / 100);
+      }
+
+      const targetVX = direction.current.x * (SPEED * speedMultiplier);
+      const targetVZ = direction.current.z * (SPEED * speedMultiplier);
 
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, targetVX, 1 - Math.exp(-ACCEL_RATE * delta));
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, targetVZ, 1 - Math.exp(-ACCEL_RATE * delta));
-
-      const targetAngle = Math.atan2(direction.current.x, direction.current.z);
-      let angleDiff = targetAngle - currentAngle.current;
-
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-
-      currentAngle.current += angleDiff * (1 - Math.exp(-ROT_RATE * delta));
-      groupRef.current.rotation.y = currentAngle.current;
     } else {
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, 0, 1 - Math.exp(-DECEL_RATE * delta));
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, 0, 1 - Math.exp(-DECEL_RATE * delta));
@@ -212,6 +262,15 @@ export default function Player({ positionRef, keys }: PlayerProps) {
       ) {
         velocity.current.set(0, 0, 0);
         isMoving.current = false;
+
+        // Idle refill stamina
+        const staminaState = getStaminaState();
+        if (staminaState.stamina < 100) {
+          const newStamina = Math.min(100, staminaState.stamina + (100 / 60) * delta);
+          setStaminaState({ stamina: newStamina, isSprinting: false });
+        } else if (staminaState.isSprinting) {
+          setStaminaState({ isSprinting: false });
+        }
       }
     }
 
@@ -321,7 +380,13 @@ export default function Player({ positionRef, keys }: PlayerProps) {
 
     // ─── Walk cycle animation ───
     if (isMoving.current) {
-      walkTime.current += delta * 9;
+      // Calculate dynamic anim speed to match feet to real movement
+      let animSpeedMultiplier = 1.0;
+      if (isSprinting) {
+        const staminaState = getStaminaState();
+        animSpeedMultiplier = 1.0 + (staminaState.stamina / 100);
+      }
+      walkTime.current += delta * 9 * animSpeedMultiplier;
     } else {
       walkTime.current *= 0.88;
     }
@@ -343,6 +408,11 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     if (headRef.current) {
       headRef.current.rotation.z = Math.sin(t * 0.5) * 0.03;
       headRef.current.rotation.x = Math.sin(t * 2) * 0.015;
+    }
+
+    // Sync rotational angle to camera
+    if (angleRef) {
+      angleRef.current = currentAngle.current;
     }
 
     // ─── Arm swing (opposite to legs) ───
@@ -466,12 +536,27 @@ export default function Player({ positionRef, keys }: PlayerProps) {
     return () => window.removeEventListener("keydown", handleGateKey);
   }, []);
 
+  // Read initial position from DB (set by initSession) or use default
+  const searchParams = useSearchParams();
+  const initPos = useMemo(() => {
+    // If arriving via portal, force spawn directly in front of the portal
+    if (searchParams.get("portal") === "true") {
+      return [-10, 1.3, -40] as [number, number, number];
+    }
+
+    const session = getSessionState();
+    if (session.initialPosition) {
+      return [session.initialPosition.x, session.initialPosition.y, session.initialPosition.z] as [number, number, number];
+    }
+    return [0, 1.3, 8] as [number, number, number];
+  }, [searchParams]);
+
   return (
     <>
       {/* Spotlight target */}
       <object3D ref={targetRef} position={[0, 0.2, 3]} />
 
-      <group ref={groupRef} position={[0, 1.3, 8]}>
+      <group ref={groupRef} position={initPos}>
         <group ref={bodyGroupRef}>
 
           {/* ════════════ TORSO ════════════ */}

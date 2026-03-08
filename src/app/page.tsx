@@ -19,6 +19,8 @@ const Scene = dynamic(() => import("@/components/Scene"), {
 export default function Home() {
   const appPhase = useSessionStore((s) => s.appPhase);
   const musicEnabled = useSessionStore((s) => s.musicEnabled);
+  const gameDataLoaded = useSessionStore((s) => s.gameDataLoaded);
+  const mode = useSessionStore((s) => s.mode);
   const [loading, setLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -27,9 +29,11 @@ export default function Home() {
     initSession();
   }, []);
 
-  // Game loading screen timer (only when entering game phase)
+  // Game loading screen timer (only when entering game phase AND data is loaded)
   useEffect(() => {
     if (appPhase !== "game") return;
+    // For login mode, wait for DB data to be loaded
+    if (mode === "login" && !gameDataLoaded) return;
     setLoading(true);
     setFadeOut(false);
     const minTimer = setTimeout(() => {
@@ -37,7 +41,7 @@ export default function Home() {
       setTimeout(() => setLoading(false), 800);
     }, 2500);
     return () => clearTimeout(minTimer);
-  }, [appPhase]);
+  }, [appPhase, gameDataLoaded, mode]);
 
   // ─── Mode Select ───
   if (appPhase === "loading") {
@@ -121,7 +125,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(154, 106, 255, 0.3)",
             }}
           >
-            Entering the Night
+            {mode === "login" && !gameDataLoaded ? "Connecting to the Realm" : "Entering the Night"}
           </h1>
 
           {/* Subtitle */}
@@ -134,7 +138,7 @@ export default function Home() {
               animation: "pulse 2s ease-in-out infinite",
             }}
           >
-            Traversing through the portal...
+            {mode === "login" && !gameDataLoaded ? "Loading your saved data..." : "Traversing through the portal..."}
           </p>
 
           {/* Progress bar */}

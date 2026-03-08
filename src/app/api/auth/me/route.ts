@@ -27,7 +27,7 @@ export async function GET() {
       return NextResponse.json({ ok: false, error: "Invalid session" }, { status: 401 });
     }
 
-    return NextResponse.json({ ok: true, email });
+    return NextResponse.json({ ok: true, email, userId: user.id });
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid session" }, { status: 401 });
   }

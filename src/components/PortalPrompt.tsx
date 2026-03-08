@@ -29,14 +29,12 @@ export default function PortalPrompt() {
         }
     });
 
-    // Portal Door position (back fence)
-    const PORTAL_Z = -44.9;
-
+    // Portal behind main hall back wall (z = -4, building is centered at origin)
     return (
         <group>
             {/* ─── "[ X ] ENTER" prompt ─── */}
             <Billboard
-                position={[-10, 2.5, PORTAL_Z + 2]}
+                position={[0, 5.5, -5.5]}
                 follow
                 lockX={false}
                 lockY={false}
