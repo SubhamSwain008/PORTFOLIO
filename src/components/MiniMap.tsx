@@ -2,6 +2,7 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { MINIMAP } from "./settings/settings";
 
 interface MiniMapLogicProps {
   playerPosRef: React.MutableRefObject<THREE.Vector3>;
@@ -26,7 +27,7 @@ export function MiniMapLogic({ playerPosRef }: MiniMapLogicProps) {
     const distSq = dx * dx + dz * dz;
 
     // If we're very close in the hall, fade out the arrow
-    if (distSq < 25) { // 5 unit radius
+    if (distSq < MINIMAP.HALL_FADE_DISTANCE_SQ) { // 5 unit radius
         arrow.style.opacity = "0";
         return;
     } else {
@@ -60,8 +61,8 @@ export function MiniMap() {
         position: "fixed",
         top: 24,
         left: 24,
-        width: 100,
-        height: 100,
+        width: MINIMAP.SIZE,
+        height: MINIMAP.SIZE,
         borderRadius: "50%",
         background: "rgba(10, 10, 15, 0.7)",
         backdropFilter: "blur(12px)",
@@ -121,7 +122,7 @@ export function MiniMap() {
         style={{
           position: "absolute",
           width: 24,
-          height: 100, // Full height of minimap to pivot perfectly at center
+          height: MINIMAP.SIZE, // Full height of minimap to pivot perfectly at center
           left: "50%",
           transformOrigin: "center",
           transform: "translateX(-50%) rotate(0deg)",

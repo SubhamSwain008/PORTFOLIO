@@ -8,6 +8,10 @@ import { useSearchParams } from "next/navigation";
 import { getSessionState } from "./useSessionStore";
 import { getStaminaState, setStaminaState } from "./useStaminaStore";
 import { ENV_PROPS } from "../lib/environment";
+import {
+  PLAYER, STAMINA, STAMINA_RECOVERY_RATE, WORLD, GATE, PORTAL,
+  WALK_ANIM, FLASHLIGHT,
+} from "./settings/settings";
 
 interface PlayerProps {
   positionRef: React.MutableRefObject<THREE.Vector3>;
@@ -56,7 +60,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const spotlightRef = useRef<THREE.SpotLight>(null!);
   const targetRef = useRef<THREE.Object3D>(null!);
   const flickerTime = useRef(0);
-  const baseFlashlightIntensity = 66;
+  const baseFlashlightIntensity = FLASHLIGHT.BASE_INTENSITY;
 
   // ─── Body part refs for proper walk animation ───
   const bodyGroupRef = useRef<THREE.Group>(null!);
@@ -67,22 +71,21 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const rightLegRef = useRef<THREE.Group>(null!);
   const flashlightGroupRef = useRef<THREE.Group>(null!);
 
-  const SPEED = 7;
+  const SPEED = PLAYER.WALK_SPEED;
 
   // Door position (front face of building)
-  const DOOR_POS = new THREE.Vector3(0, 0, 4.5);
+  const DOOR_POS = new THREE.Vector3(...PORTAL.DOOR_POS);
   // Portal Door position (back face fence)
-  const PORTAL_POS = new THREE.Vector3(0, 0, -4.01);
-  const ENTRANCE_RADIUS = 4;
+  const PORTAL_POS = new THREE.Vector3(...PORTAL.PORTAL_POS);
+  const ENTRANCE_RADIUS = PORTAL.ENTRANCE_RADIUS;
 
   // ─── Fence gate positions (center of each side) ───
-  const GATE_POSITIONS = [
-    { pos: new THREE.Vector3(0, 0, -45), dir: new THREE.Vector3(0, 0, -1), axis: "z" as const },  // North
-    { pos: new THREE.Vector3(0, 0, 45), dir: new THREE.Vector3(0, 0, 1), axis: "z" as const },   // South
-    { pos: new THREE.Vector3(-45, 0, 0), dir: new THREE.Vector3(-1, 0, 0), axis: "x" as const }, // West
-    { pos: new THREE.Vector3(45, 0, 0), dir: new THREE.Vector3(1, 0, 0), axis: "x" as const },   // East
-  ];
-  const GATE_DETECT_RADIUS = 4;
+  const GATE_POSITIONS = GATE.POSITIONS.map((g) => ({
+    pos: new THREE.Vector3(...g.pos),
+    dir: new THREE.Vector3(...g.dir),
+    axis: g.axis,
+  }));
+  const GATE_DETECT_RADIUS = GATE.DETECT_RADIUS;
   const gateCrossingTarget = useRef<THREE.Vector3 | null>(null);
   const gateCrossingDir = useRef<THREE.Vector3>(new THREE.Vector3());
 
@@ -117,7 +120,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       const pos = groupRef.current.position;
 
       // Move toward target
-      const moveSpeed = SPEED * 0.8;
+      const moveSpeed = SPEED * GATE.CROSSING_SPEED_MULT;
       pos.x += dir.x * moveSpeed * delta;
       pos.z += dir.z * moveSpeed * delta;
 
@@ -127,7 +130,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       groupRef.current.rotation.y = currentAngle.current;
 
       // Walk animation during crossing
-      walkTime.current += delta * 9;
+      walkTime.current += delta * WALK_ANIM.FREQUENCY;
       isMoving.current = true;
 
       // Check if we've passed the target
@@ -144,28 +147,28 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       // Still animate body parts
       const t = walkTime.current;
       const walkCycle = Math.sin(t);
-      const bodyBob = Math.abs(Math.sin(t * 2)) * 0.03;
-      const bodySway = Math.sin(t) * 0.015;
+      const bodyBob = Math.abs(Math.sin(t * 2)) * WALK_ANIM.BODY_BOB;
+      const bodySway = Math.sin(t) * WALK_ANIM.BODY_SWAY;
       if (bodyGroupRef.current) {
         bodyGroupRef.current.position.y = bodyBob;
         bodyGroupRef.current.rotation.z = bodySway;
       }
       if (headRef.current) {
-        headRef.current.rotation.z = Math.sin(t * 0.5) * 0.03;
-        headRef.current.rotation.x = Math.sin(t * 2) * 0.015;
+        headRef.current.rotation.z = Math.sin(t * 0.5) * WALK_ANIM.HEAD_SWAY_Z;
+        headRef.current.rotation.x = Math.sin(t * 2) * WALK_ANIM.HEAD_NOD_X;
       }
-      const armSwing = walkCycle * 0.5;
+      const armSwing = walkCycle * WALK_ANIM.ARM_SWING;
       if (leftArmRef.current) leftArmRef.current.rotation.x = armSwing;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = -armSwing * 0.4;
-      const legSwing = walkCycle * 0.55;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT;
+      const legSwing = walkCycle * WALK_ANIM.LEG_SWING;
       if (leftLegRef.current) leftLegRef.current.rotation.x = -legSwing;
       if (rightLegRef.current) rightLegRef.current.rotation.x = legSwing;
-      if (flashlightGroupRef.current) flashlightGroupRef.current.rotation.x = -armSwing * 0.4 + 0.25;
+      if (flashlightGroupRef.current) flashlightGroupRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT + FLASHLIGHT.RESTING_TILT;
 
       // Flashlight target + flicker during crossing
       const facingDir = new THREE.Vector3(Math.sin(currentAngle.current), 0, Math.cos(currentAngle.current));
       if (targetRef.current) {
-        targetRef.current.position.set(pos.x + facingDir.x * 12, 0, pos.z + facingDir.z * 12);
+        targetRef.current.position.set(pos.x + facingDir.x * FLASHLIGHT.AIM_DISTANCE, 0, pos.z + facingDir.z * FLASHLIGHT.AIM_DISTANCE);
       }
       flickerTime.current += delta;
       if (spotlightRef.current) {
@@ -177,7 +180,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
 
     // --- Movement direction ---
     direction.current.set(0, 0, 0);
-    const ROT_SPEED = 2.5; // Radians per second
+    const ROT_SPEED = PLAYER.ROT_SPEED; // Radians per second
 
     // Handle Rotation (A/D)
     if (keys.current["a"] || keys.current["arrowleft"]) {
@@ -197,7 +200,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     // Handle Forward/Backward Momentum (W/S)
     let moveIntensity = 0;
     if (keys.current["w"] || keys.current["arrowup"]) moveIntensity = 1;
-    if (keys.current["s"] || keys.current["arrowdown"]) moveIntensity = -0.5; // Backpedal slower
+    if (keys.current["s"] || keys.current["arrowdown"]) moveIntensity = PLAYER.BACKPEDAL_MULTIPLIER; // Backpedal slower
 
     if (moveIntensity !== 0) {
       // Calculate trig vector based on current facing angle
@@ -205,9 +208,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       direction.current.z = Math.cos(currentAngle.current) * moveIntensity;
     }
 
-    const ACCEL_RATE = 12;
-    const DECEL_RATE = 10;
-    const ROT_RATE = 15;
+    const ACCEL_RATE = PLAYER.ACCEL_RATE;
+    const DECEL_RATE = PLAYER.DECEL_RATE;
 
     const hasInput = direction.current.length() > 0;
     let isSprinting = false;
@@ -223,7 +225,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       if (keys.current["shift"] && currentStamina > 0) {
         // Sprinting: drain 100 stamina in 20s (5 units/sec)
         isSprinting = true;
-        currentStamina = Math.max(0, currentStamina - 5 * delta);
+        currentStamina = Math.max(0, currentStamina - STAMINA.DRAIN_PER_SECOND * delta);
         setStaminaState({ stamina: currentStamina, isSprinting: true });
       } else {
         // Normal walking: 1x speed
@@ -233,8 +235,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
           }
         } else {
           // Refill 100 stamina in 30s (~3.33 units/sec)
-          if (currentStamina < 100) {
-            currentStamina = Math.min(100, currentStamina + (100 / 30) * delta);
+          if (currentStamina < STAMINA.MAX) {
+            currentStamina = Math.min(STAMINA.MAX, currentStamina + STAMINA_RECOVERY_RATE * delta);
             setStaminaState({ stamina: currentStamina, isSprinting: false });
           } else if (staminaState.isSprinting) {
             setStaminaState({ isSprinting: false });
@@ -245,10 +247,10 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       let speedMultiplier = 1.0;
       if (isSprinting) {
         // Full 2x speed while stamina > 50, then linearly reduce to 1x at 0
-        if (currentStamina >= 50) {
-          speedMultiplier = 2.0;
+        if (currentStamina >= STAMINA.SPRINT_THRESHOLD) {
+          speedMultiplier = STAMINA.SPRINT_MAX_MULTIPLIER;
         } else {
-          speedMultiplier = 1.0 + (currentStamina / 50);
+          speedMultiplier = 1.0 + (currentStamina / STAMINA.SPRINT_THRESHOLD);
         }
       }
 
@@ -262,16 +264,16 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, 0, 1 - Math.exp(-DECEL_RATE * delta));
 
       if (
-        Math.abs(velocity.current.x) < 0.05 &&
-        Math.abs(velocity.current.z) < 0.05
+        Math.abs(velocity.current.x) < PLAYER.VELOCITY_STOP_THRESHOLD &&
+        Math.abs(velocity.current.z) < PLAYER.VELOCITY_STOP_THRESHOLD
       ) {
         velocity.current.set(0, 0, 0);
         isMoving.current = false;
 
         // Idle refill stamina
         const staminaState = getStaminaState();
-        if (staminaState.stamina < 100) {
-          const newStamina = Math.min(100, staminaState.stamina + (100 / 30) * delta);
+        if (staminaState.stamina < STAMINA.MAX) {
+          const newStamina = Math.min(STAMINA.MAX, staminaState.stamina + STAMINA_RECOVERY_RATE * delta);
           setStaminaState({ stamina: newStamina, isSprinting: false });
         } else if (staminaState.isSprinting) {
           setStaminaState({ isSprinting: false });
@@ -282,13 +284,13 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     const nextX = groupRef.current.position.x + velocity.current.x * delta;
     const nextZ = groupRef.current.position.z + velocity.current.z * delta;
 
-    const BOUNDS = 220;
+    const BOUNDS = WORLD.BOUNDS;
     let finalX = nextX;
     let finalZ = nextZ;
 
     // Building collision
-    const BUILDING_HALF_X = 4.8;
-    const BUILDING_HALF_Z = 4.8;
+    const BUILDING_HALF_X = WORLD.BUILDING_HALF_X;
+    const BUILDING_HALF_Z = WORLD.BUILDING_HALF_Z;
 
     if (
       finalX > -BUILDING_HALF_X &&
@@ -310,15 +312,15 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     }
 
     // Tree & Rock collision
-    const PLAYER_RADIUS = 0.3;
+    const PLAYER_RADIUS = PLAYER.COLLISION_RADIUS;
 
     for (const item of ENV_PROPS) {
       let objectRadius = 0;
 
       if (item.type === "tree") {
-        objectRadius = 0.4;
+        objectRadius = WORLD.TREE_COLLISION_RADIUS;
       } else if (item.type === "rock") {
-        objectRadius = 0.4 * (item.scale || 1) * 0.8;
+        objectRadius = WORLD.ROCK_COLLISION_BASE * (item.scale || 1) * WORLD.ROCK_COLLISION_SCALE_MULT;
       } else {
         continue;
       }
@@ -349,9 +351,9 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     }
 
     // ─── Fence wall collision (only where fence exists: ±29 extent) ───
-    const FENCE = 45;
-    const GATE_HALF = 4; // gate opening half-width
-    const PUSH = 0.05;
+    const FENCE = WORLD.FENCE_DISTANCE;
+    const GATE_HALF = WORLD.GATE_HALF_WIDTH; // gate opening half-width
+    const PUSH = WORLD.WALL_PUSH;
     const prevX = groupRef.current.position.x;
     const prevZ = groupRef.current.position.z;
 
@@ -389,11 +391,11 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       let animSpeedMultiplier = 1.0;
       if (isSprinting) {
         const staminaState = getStaminaState();
-        animSpeedMultiplier = 1.0 + (staminaState.stamina / 100);
+        animSpeedMultiplier = 1.0 + (staminaState.stamina / STAMINA.MAX);
       }
-      walkTime.current += delta * 9 * animSpeedMultiplier;
+      walkTime.current += delta * WALK_ANIM.FREQUENCY * animSpeedMultiplier;
     } else {
-      walkTime.current *= 0.88;
+      walkTime.current *= WALK_ANIM.DECAY;
     }
 
     const t = walkTime.current;
@@ -401,8 +403,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     const walkCycleAbs = Math.abs(walkCycle);
 
     // Body bob (up/down bounce when walking)
-    const bodyBob = Math.abs(Math.sin(t * 2)) * 0.03;
-    const bodySway = Math.sin(t) * 0.015;
+    const bodyBob = Math.abs(Math.sin(t * 2)) * WALK_ANIM.BODY_BOB;
+    const bodySway = Math.sin(t) * WALK_ANIM.BODY_SWAY;
 
     if (bodyGroupRef.current) {
       bodyGroupRef.current.position.y = bodyBob;
@@ -411,8 +413,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
 
     // Head bob and look sway
     if (headRef.current) {
-      headRef.current.rotation.z = Math.sin(t * 0.5) * 0.03;
-      headRef.current.rotation.x = Math.sin(t * 2) * 0.015;
+      headRef.current.rotation.z = Math.sin(t * 0.5) * WALK_ANIM.HEAD_SWAY_Z;
+      headRef.current.rotation.x = Math.sin(t * 2) * WALK_ANIM.HEAD_NOD_X;
     }
 
     // Sync rotational angle to camera
@@ -421,17 +423,17 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     }
 
     // ─── Arm swing (opposite to legs) ───
-    const armSwing = walkCycle * 0.5;
+    const armSwing = walkCycle * WALK_ANIM.ARM_SWING;
 
     if (leftArmRef.current) {
       leftArmRef.current.rotation.x = armSwing;
     }
     if (rightArmRef.current) {
-      rightArmRef.current.rotation.x = -armSwing * 0.4; // less swing, holding flashlight
+      rightArmRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT; // less swing, holding flashlight
     }
 
     // ─── Leg swing ───
-    const legSwing = walkCycle * 0.55;
+    const legSwing = walkCycle * WALK_ANIM.LEG_SWING;
 
     if (leftLegRef.current) {
       leftLegRef.current.rotation.x = -legSwing;
@@ -442,7 +444,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
 
     // ─── Flashlight sway ───
     if (flashlightGroupRef.current) {
-      flashlightGroupRef.current.rotation.x = -armSwing * 0.4 + 0.25;
+      flashlightGroupRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT + FLASHLIGHT.RESTING_TILT;
     }
 
     // ─── Flashlight target ───
@@ -454,9 +456,9 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
 
     if (targetRef.current) {
       targetRef.current.position.set(
-        groupRef.current.position.x + facingDir.x * 12,
+        groupRef.current.position.x + facingDir.x * FLASHLIGHT.AIM_DISTANCE,
         0,
-        groupRef.current.position.z + facingDir.z * 12
+        groupRef.current.position.z + facingDir.z * FLASHLIGHT.AIM_DISTANCE
       );
     }
 
@@ -526,13 +528,13 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       }
 
       // Determine crossing direction: if player is inside fence, walk outward; if outside, walk inward
-      const isInside = Math.abs(playerPos.x) < 45 && Math.abs(playerPos.z) < 45;
+      const isInside = Math.abs(playerPos.x) < WORLD.FENCE_DISTANCE && Math.abs(playerPos.z) < WORLD.FENCE_DISTANCE;
       const crossDir = isInside
         ? closestGate.dir.clone() // walk outward
         : closestGate.dir.clone().negate(); // walk inward
 
       // Set target 6 units through the gate from current position
-      gateCrossingTarget.current = playerPos.clone().add(crossDir.clone().multiplyScalar(6));
+      gateCrossingTarget.current = playerPos.clone().add(crossDir.clone().multiplyScalar(GATE.WALK_THROUGH_DISTANCE));
       gateCrossingDir.current.copy(crossDir);
       setGameState({ isCrossingGate: true });
     };
@@ -546,14 +548,14 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const initPos = useMemo(() => {
     // If arriving via portal, force spawn directly in front of the portal
     if (searchParams.get("portal") === "true") {
-      return [-10, 1.3, -40] as [number, number, number];
+      return [...PORTAL.PORTAL_ARRIVAL_SPAWN] as [number, number, number];
     }
 
     const session = getSessionState();
     if (session.initialPosition) {
       return [session.initialPosition.x, session.initialPosition.y, session.initialPosition.z] as [number, number, number];
     }
-    return [0, 1.3, 8] as [number, number, number];
+    return [...PORTAL.DEFAULT_SPAWN] as [number, number, number];
   }, [searchParams]);
 
   return (
@@ -832,23 +834,23 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
           position={[0.3, 0.5, 0.3]}
           color="#fff5dd"
           intensity={baseFlashlightIntensity}
-          distance={220}
-          angle={0.28}
-          penumbra={0.6}
+          distance={FLASHLIGHT.DISTANCE}
+          angle={FLASHLIGHT.ANGLE}
+          penumbra={FLASHLIGHT.PENUMBRA}
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-bias={-0.001}
-          decay={1.0}
+          shadow-mapSize-width={FLASHLIGHT.SHADOW_MAP_SIZE}
+          shadow-mapSize-height={FLASHLIGHT.SHADOW_MAP_SIZE}
+          shadow-bias={FLASHLIGHT.SHADOW_BIAS}
+          decay={FLASHLIGHT.DECAY}
         />
 
         {/* Overhead fill */}
         <pointLight
           position={[0, 3, 0]}
-          color="#8888cc"
-          intensity={5.5}
-          distance={18}
-          decay={0.5}
+          color={FLASHLIGHT.OVERHEAD_COLOR}
+          intensity={FLASHLIGHT.OVERHEAD_INTENSITY}
+          distance={FLASHLIGHT.OVERHEAD_DISTANCE}
+          decay={FLASHLIGHT.OVERHEAD_DECAY}
         />
       </group>
     </>

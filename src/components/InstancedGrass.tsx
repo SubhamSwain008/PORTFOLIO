@@ -2,6 +2,7 @@
 
 import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
+import { GRASS } from "./settings/settings";
 
 interface InstancedGrassProps {
     realm: "night" | "day";
@@ -21,7 +22,7 @@ function prng(seed: number) {
 const tempObject = new THREE.Object3D();
 const tempColor = new THREE.Color();
 
-const BLADES_PER_TREE = 35;
+const BLADES_PER_TREE = GRASS.BLADES_PER_TREE;
 
 export default function InstancedGrass({ realm, baseColor, count, treePositions = [] }: InstancedGrassProps) {
     const meshRef = useRef<THREE.InstancedMesh>(null!);
@@ -43,8 +44,8 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
     const geometry = useMemo(() => {
         const segsX = 1;
         const segsY = 5;
-        const width = 0.25;
-        const height = 0.9;
+        const width = GRASS.BLADE_WIDTH;
+        const height = GRASS.BLADE_HEIGHT;
 
         const plane1 = new THREE.PlaneGeometry(width, height, segsX, segsY);
         const plane2 = new THREE.PlaneGeometry(width, height, segsX, segsY);
@@ -82,10 +83,10 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
         for (let i = 0; i < pos.count; i++) {
             const y = pos.getY(i);
             const t = y / height;
-            const taper = 1.0 - t * t * 0.9;
+            const taper = 1.0 - t * t * GRASS.TAPER;
             pos.setX(i, pos.getX(i) * taper);
             pos.setZ(i, pos.getZ(i) * taper);
-            pos.setZ(i, pos.getZ(i) + t * t * 0.08);
+            pos.setZ(i, pos.getZ(i) + t * t * GRASS.CURVE);
         }
 
         pos.needsUpdate = true;
@@ -102,7 +103,7 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
         const baseC = new THREE.Color(baseColor);
 
         // ─── PART 1: Random cluster grass (first `count` instances) ───
-        const numClusters = 80;
+        const numClusters = GRASS.NUM_CLUSTERS;
 
         for (let i = 0; i < count; i++) {
             const seed = i + seedOffset;
@@ -110,16 +111,16 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
             const clusterIndex = i % numClusters;
             const clusterSeed = clusterIndex * 1337 + seedOffset;
 
-            const cx = (prng(clusterSeed) - 0.5) * 300;
-            const cz = (prng(clusterSeed + 100000) - 0.5) * 300;
+            const cx = (prng(clusterSeed) - 0.5) * GRASS.CLUSTER_SPREAD;
+            const cz = (prng(clusterSeed + 100000) - 0.5) * GRASS.CLUSTER_SPREAD;
 
-            const r = Math.pow(prng(seed + 800000), 1.8) * 5.0;
+            const r = Math.pow(prng(seed + 800000), GRASS.CLUSTER_RADIUS_POWER) * GRASS.CLUSTER_RADIUS_MAX;
             const a = prng(seed + 900000) * Math.PI * 2;
 
             const px = cx + Math.cos(a) * r;
             const pz = cz + Math.sin(a) * r;
 
-            if (px * px + pz * pz < 100) {
+            if (px * px + pz * pz < GRASS.BUILDING_EXCLUSION_SQ) {
                 tempObject.position.set(0, -1000, 0);
                 tempObject.scale.set(0, 0, 0);
                 tempObject.updateMatrix();
@@ -130,8 +131,8 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
             }
 
             const rotY = prng(seed + 200000) * Math.PI * 2;
-            const scaleY = 0.6 + prng(seed + 300000) * 1.0;
-            const scaleX = 0.5 + prng(seed + 400000) * 0.8;
+            const scaleY = GRASS.SCALE_Y_MIN + prng(seed + 300000) * GRASS.SCALE_Y_RANGE;
+            const scaleX = GRASS.SCALE_X_MIN + prng(seed + 400000) * GRASS.SCALE_X_RANGE;
 
             tempObject.position.set(px, 0, pz);
             tempObject.rotation.set(0, rotY, 0);
@@ -156,15 +157,15 @@ export default function InstancedGrass({ realm, baseColor, count, treePositions 
                 const seed = idx + seedOffset + 2000000;
 
                 // Scatter in a ring around the trunk (0.5 to 3.0 units away)
-                const dist = 0.5 + prng(seed) * 2.5;
+                const dist = GRASS.TREE_SCATTER_MIN + prng(seed) * GRASS.TREE_SCATTER_RANGE;
                 const angle = prng(seed + 100000) * Math.PI * 2;
 
                 const px = tx + Math.cos(angle) * dist;
                 const pz = tz + Math.sin(angle) * dist;
 
                 const rotY = prng(seed + 200000) * Math.PI * 2;
-                const scaleY = 0.5 + prng(seed + 300000) * 0.9;
-                const scaleX = 0.5 + prng(seed + 400000) * 0.7;
+                const scaleY = GRASS.TREE_SCALE_Y_MIN + prng(seed + 300000) * GRASS.TREE_SCALE_Y_RANGE;
+                const scaleX = GRASS.TREE_SCALE_X_MIN + prng(seed + 400000) * GRASS.TREE_SCALE_X_RANGE;
 
                 tempObject.position.set(px, 0, pz);
                 tempObject.rotation.set(0, rotY, 0);

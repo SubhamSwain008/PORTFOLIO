@@ -4,14 +4,15 @@ import * as THREE from "three";
 
 import { useTexture } from "@react-three/drei";
 import WallCandle from "./WallCandle";
+import { BUILDING } from "./settings/settings";
 
 export default function ProfileBuilding() {
-  const WIDTH = 8;
-  const DEPTH = 8;
-  const HEIGHT = 14;
-  const WALL_THICKNESS = 0.5;
-  const DOOR_WIDTH = 2;
-  const DOOR_HEIGHT = 4;
+  const WIDTH = BUILDING.WIDTH;
+  const DEPTH = BUILDING.DEPTH;
+  const HEIGHT = BUILDING.HEIGHT;
+  const WALL_THICKNESS = BUILDING.WALL_THICKNESS;
+  const DOOR_WIDTH = BUILDING.DOOR_WIDTH;
+  const DOOR_HEIGHT = BUILDING.DOOR_HEIGHT;
 
   const doorTex = useTexture("/assets/door.png");
   doorTex.magFilter = THREE.NearestFilter;

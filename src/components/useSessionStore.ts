@@ -58,6 +58,33 @@ export function useSessionStore<T>(selector: (s: SessionState) => T): T {
   );
 }
 
+// ─── Load game data from DB (inventory, position, world) ─
+export async function loadGameData(): Promise<boolean> {
+  try {
+    const gameRes = await fetch("/api/game/load");
+    if (gameRes.ok) {
+      const gameData = await gameRes.json();
+      if (gameData.ok) {
+        // Hydrate inventory store
+        if (gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
+          setInventoryState({ items: gameData.inventory });
+        }
+        // Store initial position and world
+        if (gameData.position) {
+          setSessionState({
+            initialPosition: gameData.position,
+            currentWorld: gameData.currentWorld || "night",
+          });
+        }
+        return true;
+      }
+    }
+  } catch {
+    // Game data fetch failed — continue with defaults
+  }
+  return false;
+}
+
 // ─── Init: check existing session + load game data ───────
 export async function initSession() {
   // Load persisted music preference
@@ -78,39 +105,21 @@ export async function initSession() {
       });
 
       // Fetch game data from DB
-      try {
-        const gameRes = await fetch("/api/game/load");
-        if (gameRes.ok) {
-          const gameData = await gameRes.json();
-          if (gameData.ok) {
-            // Hydrate inventory store
-            if (gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
-              setInventoryState({ items: gameData.inventory });
-            }
-            // Store initial position and world
-            if (gameData.position) {
-              setSessionState({
-                initialPosition: gameData.position,
-                currentWorld: gameData.currentWorld || "night",
-              });
-
-              // Smart routing logic
-              // Only redirect if NOT traveling through a portal
-              if (!window.location.search.includes("portal=true")) {
-                const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
-                const targetRoute = W_ROUTES[gameData.currentWorld] || "/";
-                
-                // If we are not currently on the persistent world's route, redirect before rendering game
-                if (window.location.pathname !== targetRoute) {
-                  window.location.href = targetRoute;
-                  return; // Stop initialization render
-                }
-              }
-            }
+      const loaded = await loadGameData();
+      if (loaded) {
+        const session = getSessionState();
+        // Smart routing logic
+        // Only redirect if NOT traveling through a portal
+        if (session.initialPosition && !window.location.search.includes("portal=true")) {
+          const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
+          const targetRoute = W_ROUTES[session.currentWorld] || "/";
+          
+          // If we are not currently on the persistent world's route, redirect before rendering game
+          if (window.location.pathname !== targetRoute) {
+            window.location.href = targetRoute;
+            return; // Stop initialization render
           }
         }
-      } catch {
-        // Game data fetch failed — continue with defaults
       }
 
       setSessionState({

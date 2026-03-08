@@ -5,17 +5,15 @@ import { useFrame } from "@react-three/fiber";
 import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 import { useGameStore } from "./useGameStore";
+import { GATE } from "./settings/settings";
 
 /**
  * Renders a "[ X ] CROSS GATE" billboard at EACH of the 4 fence gate openings.
  * Only the nearest one fades in; the others stay invisible.
  */
-const GATE_POSITIONS: [number, number, number][] = [
-    [0, 2.2, -45],   // North
-    [0, 2.2, 45],    // South
-    [-45, 2.2, 0],   // West
-    [45, 2.2, 0],    // East
-];
+const GATE_POSITIONS: [number, number, number][] = GATE.POSITIONS.map((g) => [
+    g.pos[0], 2.2, g.pos[2],
+]);
 
 function SingleGatePrompt({
     position,

@@ -1,3 +1,5 @@
+import { NIGHT_ENV } from "../components/settings/settings";
+
 export interface EnvItem {
     type: "tree" | "rock";
     pos: [number, number, number];
@@ -17,22 +19,22 @@ function generateEnvironment(): EnvItem[] {
         };
     };
 
-    const random = rng(42);
+    const random = rng(NIGHT_ENV.SEED);
 
     // Trees
-    for (let i = 0; i < 500; i++) {
-        const x = (random() - 0.5) * 440;
-        const z = (random() - 0.5) * 440;
+    for (let i = 0; i < NIGHT_ENV.TREE_COUNT; i++) {
+        const x = (random() - 0.5) * NIGHT_ENV.SPREAD;
+        const z = (random() - 0.5) * NIGHT_ENV.SPREAD;
 
-        if (Math.abs(x) < 7 && Math.abs(z) < 7) continue;
+        if (Math.abs(x) < NIGHT_ENV.BUILDING_EXCLUSION && Math.abs(z) < NIGHT_ENV.BUILDING_EXCLUSION) continue;
 
-        // Keep portal area clear (portal at x=-10, z=-28.9)
-        const dxP = x - (-10);
-        const dzP = z - (-44.9);
-        if (dxP * dxP + dzP * dzP < 36) continue; // 6-unit radius exclusion
+        // Keep portal area clear
+        const dxP = x - NIGHT_ENV.PORTAL_EXCLUSION_CENTER[0];
+        const dzP = z - NIGHT_ENV.PORTAL_EXCLUSION_CENTER[1];
+        if (dxP * dxP + dzP * dzP < NIGHT_ENV.PORTAL_EXCLUSION_RADIUS * NIGHT_ENV.PORTAL_EXCLUSION_RADIUS) continue;
 
-        const scale = 0.6 + random() * 1.0;
-        const variant = Math.floor(random() * 5);
+        const scale = NIGHT_ENV.TREE_SCALE_MIN + random() * NIGHT_ENV.TREE_SCALE_RANGE;
+        const variant = Math.floor(random() * NIGHT_ENV.TREE_VARIANTS);
 
         items.push({
             type: "tree",
@@ -43,22 +45,22 @@ function generateEnvironment(): EnvItem[] {
     }
 
     // Rocks
-    for (let i = 0; i < 300; i++) {
-        const x = (random() - 0.5) * 440;
-        const z = (random() - 0.5) * 440;
+    for (let i = 0; i < NIGHT_ENV.ROCK_COUNT; i++) {
+        const x = (random() - 0.5) * NIGHT_ENV.SPREAD;
+        const z = (random() - 0.5) * NIGHT_ENV.SPREAD;
 
-        if (Math.abs(x) < 6 && Math.abs(z) < 6) continue;
+        if (Math.abs(x) < NIGHT_ENV.ROCK_BUILDING_EXCLUSION && Math.abs(z) < NIGHT_ENV.ROCK_BUILDING_EXCLUSION) continue;
 
         // Keep portal area clear
-        const dxP = x - (-10);
-        const dzP = z - (-44.9);
-        if (dxP * dxP + dzP * dzP < 36) continue;
+        const dxP = x - NIGHT_ENV.PORTAL_EXCLUSION_CENTER[0];
+        const dzP = z - NIGHT_ENV.PORTAL_EXCLUSION_CENTER[1];
+        if (dxP * dxP + dzP * dzP < NIGHT_ENV.PORTAL_EXCLUSION_RADIUS * NIGHT_ENV.PORTAL_EXCLUSION_RADIUS) continue;
 
-        const scale = 0.5 + random() * 1.2;
+        const scale = NIGHT_ENV.ROCK_SCALE_MIN + random() * NIGHT_ENV.ROCK_SCALE_RANGE;
 
         items.push({
             type: "rock",
-            pos: [x, scale * 0.15, z],
+            pos: [x, scale * NIGHT_ENV.ROCK_Y_MULT, z],
             scale,
         });
     }

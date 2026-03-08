@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import * as THREE from "three";
 import { getSessionState } from "./useSessionStore";
 import { setSavingStatus } from "./SaveIndicator";
+import { AUTOSAVE } from "./settings/settings";
 
 interface PositionAutoSaveProps {
   playerPosRef: React.MutableRefObject<THREE.Vector3>;
@@ -22,7 +23,7 @@ export default function PositionAutoSave({ playerPosRef, world }: PositionAutoSa
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ x: pos.x, y: pos.y, z: pos.z, world }),
       }).catch(() => {}); // silent fail
-    }, 15_000);
+    }, AUTOSAVE.INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [playerPosRef]);

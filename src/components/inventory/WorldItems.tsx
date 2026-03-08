@@ -11,21 +11,22 @@ import {
   useInventoryStore,
   nearestItemPrompt,
 } from "./inventory";
+import { INVENTORY } from "../settings/settings";
 
 interface WorldItemsProps {
   playerPosRef: React.MutableRefObject<THREE.Vector3>;
   realm: "night" | "day";
 }
-const COLLECT_RADIUS = 3.5;
-const MODEL_RADIUS_SQ = 22 * 22;  // show full 3D model within 22 units
-const VISIBILITY_RADIUS_SQ = 35 * 35; // completely hide beyond 35 units
+const COLLECT_RADIUS = INVENTORY.COLLECT_RADIUS;
+const MODEL_RADIUS_SQ = INVENTORY.MODEL_RADIUS_SQ;
+const VISIBILITY_RADIUS_SQ = INVENTORY.VISIBILITY_RADIUS_SQ;
 
 // Reusable objects
 const tempObject = new THREE.Object3D();
 const tempColor = new THREE.Color();
 
 // ─── Instanced indicator geometry (tiny glowing orb on ground) ───
-const indicatorGeo = new THREE.SphereGeometry(0.2, 6, 6);
+const indicatorGeo = new THREE.SphereGeometry(INVENTORY.INDICATOR_RADIUS, 6, 6);
 
 // Ground ring
 const ringGeo = new THREE.RingGeometry(0.35, 0.55, 12);
@@ -61,7 +62,7 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
     [realmItems]
   );
 
-  const maxInstances = 40;
+  const maxInstances = INVENTORY.MAX_INSTANCES;
 
   // Set per-instance colors when activeItems changes
   useEffect(() => {
@@ -154,7 +155,7 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
       } else {
         // ─── FAR (but visible): show as glowing indicator orb + ring ───
         const phase = i * 2.37 + time * 2.0;
-        const bobY = 0.6 + Math.sin(phase) * 0.15;
+      const bobY = INVENTORY.INDICATOR_BASE_Y + Math.sin(phase) * INVENTORY.INDICATOR_BOB_AMPLITUDE;
 
         tempObject.position.set(si.position[0], bobY, si.position[2]);
         tempObject.rotation.set(0, 0, 0);

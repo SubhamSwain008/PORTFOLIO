@@ -2,6 +2,7 @@ import { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { EnvItem } from "../lib/environment";
+import { FENCE } from "./settings/settings";
 
 const tempObject = new THREE.Object3D();
 const color = new THREE.Color();
@@ -432,12 +433,12 @@ export function InstancedRocks({ items }: { items: EnvItem[] }) {
 }
 
 export function InstancedFencePerimeter() {
-    const halfSize = 45;
-    const segmentWidth = 4;
+    const halfSize = FENCE.HALF_SIZE;
+    const segmentWidth = FENCE.SEGMENT_WIDTH;
     const segments = Math.ceil((halfSize * 2) / segmentWidth);
-    const gateHalfWidth = 4; // 8-unit wide gate opening on each side
+    const gateHalfWidth = FENCE.GATE_HALF_WIDTH;
 
-    const picketCountPerSegment = 12;
+    const picketCountPerSegment = FENCE.PICKETS_PER_SEGMENT;
     const spacing = segmentWidth / picketCountPerSegment;
 
     const isGateSegment = (pos: number) => Math.abs(pos) < gateHalfWidth;
@@ -465,14 +466,14 @@ export function InstancedFencePerimeter() {
             const euler = new THREE.Euler(0, rotationY, 0);
 
             // Top Rail
-            tempObject.position.set(0, 0.8, 0).applyEuler(euler).add(new THREE.Vector3(x, y, z));
+            tempObject.position.set(0, FENCE.RAIL_TOP_Y, 0).applyEuler(euler).add(new THREE.Vector3(x, y, z));
             tempObject.rotation.set(0, rotationY, 0);
             tempObject.scale.set(1, 1, 1);
             tempObject.updateMatrix();
             railsRef.current!.setMatrixAt(railIndex++, tempObject.matrix);
 
             // Bottom Rail
-            tempObject.position.set(0, 0.35, 0).applyEuler(euler).add(new THREE.Vector3(x, y, z));
+            tempObject.position.set(0, FENCE.RAIL_BOTTOM_Y, 0).applyEuler(euler).add(new THREE.Vector3(x, y, z));
             tempObject.rotation.set(0, rotationY, 0);
             tempObject.scale.set(1, 1, 1);
             tempObject.updateMatrix();
@@ -481,7 +482,7 @@ export function InstancedFencePerimeter() {
             // Pickets
             for (let i = 0; i < picketCountPerSegment; i++) {
                 const px = -segmentWidth / 2 + spacing / 2 + i * spacing;
-                const height = 0.9 + (i % 3 === 0 ? 0.12 : 0);
+                const height = FENCE.PICKET_BASE_HEIGHT + (i % 3 === 0 ? FENCE.PICKET_HEIGHT_VARIATION : 0);
 
                 tempObject.position.set(px, height / 2, 0).applyEuler(euler).add(new THREE.Vector3(x, y, z));
                 tempObject.rotation.set(0, rotationY, 0);
@@ -520,8 +521,8 @@ export function InstancedFencePerimeter() {
         picketsRef.current.instanceMatrix.needsUpdate = true;
     }, [segments, actualSegments]);
 
-    const railMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: "#7a7c80", roughness: 0.7, metalness: 0.02 }), []);
-    const picketMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: "#6b6d73", roughness: 0.75, metalness: 0.02 }), []);
+    const railMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: FENCE.NIGHT_RAIL_COLOR, roughness: 0.7, metalness: 0.02 }), []);
+    const picketMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: FENCE.NIGHT_PICKET_COLOR, roughness: 0.75, metalness: 0.02 }), []);
 
     return (
         <group>

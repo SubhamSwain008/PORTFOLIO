@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { AUDIO } from "./settings/settings";
 
 // ─── Per-world settings (persisted to localStorage) ───
 
@@ -17,8 +18,8 @@ export interface WorldSettingsState {
 const STORAGE_KEY = "worldSettings";
 
 const DEFAULTS: WorldSettingsState = {
-  night: { volume: 80, brightness: 50 },
-  day: { volume: 80, brightness: 50 },
+  night: { volume: AUDIO.DEFAULT_VOLUME, brightness: AUDIO.DEFAULT_BRIGHTNESS },
+  day: { volume: AUDIO.DEFAULT_VOLUME, brightness: AUDIO.DEFAULT_BRIGHTNESS },
 };
 
 function loadFromStorage(): WorldSettingsState {
@@ -77,7 +78,7 @@ export function applyVolume(world: "night" | "day") {
 export function getBrightnessFilter(world: "night" | "day"): number {
   // brightness 50 = 1.0 (default), 0 = 0.3 (very dark), 100 = 1.8 (very bright)
   const b = state[world].brightness;
-  return 0.3 + (b / 100) * 1.5; // range 0.3 – 1.8
+  return AUDIO.BRIGHTNESS_MIN + (b / 100) * AUDIO.BRIGHTNESS_RANGE; // range 0.3 – 1.8
 }
 
 function subscribe(listener: Listener) {

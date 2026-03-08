@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 import { useGameStore } from "./useGameStore";
+import { PORTAL } from "./settings/settings";
 
 export default function EntrancePrompt() {
     const isNear = useGameStore((s) => s.isNearEntrance);
@@ -42,7 +43,7 @@ export default function EntrancePrompt() {
     });
 
     // Building: front face at Z = DEPTH/2 = 4, door position
-    const DOOR_Z = 4.5;
+    const DOOR_Z = PORTAL.DOOR_POS[2];
 
     return (
         <group>

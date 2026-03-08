@@ -2,6 +2,7 @@
 
 import { useStaminaStore } from "./useStaminaStore";
 import { useSessionStore } from "./useSessionStore";
+import { STAMINA } from "./settings/settings";
 
 export default function StaminaBar() {
   const stamina = useStaminaStore((s) => s.stamina);
@@ -12,7 +13,7 @@ export default function StaminaBar() {
   if (appPhase !== "game") return null;
 
   // Don't show if full and not sprinting
-  const opacity = stamina >= 99.9 && !isSprinting ? 0 : 1;
+  const opacity = stamina >= STAMINA.BAR_HIDE_THRESHOLD && !isSprinting ? 0 : 1;
 
   return (
     <div

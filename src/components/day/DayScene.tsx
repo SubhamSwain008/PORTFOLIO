@@ -14,14 +14,15 @@ import PositionAutoSave from "../PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "../MiniMap";
 import StaminaBar from "../StaminaBar";
 import { useWorldSettings, getBrightnessFilter } from "../useWorldSettings";
+import { DAY_LIGHTING, CAMERA, TRANSITION, GATE, PORTAL } from "../settings/settings";
 
 // ─── Daytime Fog ───
 function DayFogManager() {
     const { scene } = useThree();
 
     useEffect(() => {
-        scene.fog = new THREE.Fog("#c0daf0", 16, 45);
-        scene.background = new THREE.Color("#87CEEB");
+        scene.fog = new THREE.Fog(DAY_LIGHTING.FOG_COLOR, DAY_LIGHTING.FOG_NEAR, DAY_LIGHTING.FOG_FAR);
+        scene.background = new THREE.Color(DAY_LIGHTING.BACKGROUND_COLOR);
         return () => {
             scene.fog = null;
         };
@@ -39,7 +40,7 @@ function DayPortalPrompt() {
     const titleRef = useRef<THREE.Mesh>(null!);
     const opacity = useRef(0);
     const time = useRef(0);
-    const PORTAL_Z = -44.9;
+    const PORTAL_Z = PORTAL.BILLBOARD_Z;
 
     useFrame((_, delta) => {
         time.current += delta;
@@ -101,12 +102,9 @@ function DayPortalPrompt() {
 }
 
 // ─── Gate Prompt for Day world ───
-const DAY_GATE_POSITIONS: [number, number, number][] = [
-    [0, 2.2, -45],
-    [0, 2.2, 45],
-    [-45, 2.2, 0],
-    [45, 2.2, 0],
-];
+const DAY_GATE_POSITIONS: [number, number, number][] = GATE.POSITIONS.map((g) => [
+    g.pos[0], 2.2, g.pos[2],
+]);
 
 function SingleDayGatePrompt({
     position,
@@ -217,9 +215,9 @@ function DynamicDaySun({ playerPosRef }: { playerPosRef: React.MutableRefObject<
         if (lightRef.current && playerPosRef.current) {
             // High angle, bright daylight position offset
             lightRef.current.position.set(
-                playerPosRef.current.x + 20,
-                playerPosRef.current.y + 40,
-                playerPosRef.current.z + 15
+                playerPosRef.current.x + DAY_LIGHTING.SUN_OFFSET[0],
+                playerPosRef.current.y + DAY_LIGHTING.SUN_OFFSET[1],
+                playerPosRef.current.z + DAY_LIGHTING.SUN_OFFSET[2]
             );
             lightRef.current.target.position.copy(playerPosRef.current);
             lightRef.current.target.updateMatrixWorld();
@@ -229,20 +227,20 @@ function DynamicDaySun({ playerPosRef }: { playerPosRef: React.MutableRefObject<
     return (
         <directionalLight
             ref={lightRef}
-            intensity={3.5}
-            color="#fff5dd"
+            intensity={DAY_LIGHTING.SUN_INTENSITY}
+            color={DAY_LIGHTING.SUN_COLOR}
             castShadow
             // Much smaller map needed!
-            shadow-mapSize-width={512}
-            shadow-mapSize-height={512}
+            shadow-mapSize-width={DAY_LIGHTING.SHADOW_MAP_SIZE}
+            shadow-mapSize-height={DAY_LIGHTING.SHADOW_MAP_SIZE}
             // Tight bounds around player
-            shadow-camera-left={-20}
-            shadow-camera-right={20}
-            shadow-camera-top={20}
-            shadow-camera-bottom={-20}
-            shadow-camera-near={0.5}
-            shadow-camera-far={80}
-            shadow-bias={-0.0003}
+            shadow-camera-left={-DAY_LIGHTING.SHADOW_CAMERA_BOUNDS}
+            shadow-camera-right={DAY_LIGHTING.SHADOW_CAMERA_BOUNDS}
+            shadow-camera-top={DAY_LIGHTING.SHADOW_CAMERA_BOUNDS}
+            shadow-camera-bottom={-DAY_LIGHTING.SHADOW_CAMERA_BOUNDS}
+            shadow-camera-near={DAY_LIGHTING.SHADOW_NEAR}
+            shadow-camera-far={DAY_LIGHTING.SHADOW_FAR}
+            shadow-bias={DAY_LIGHTING.SHADOW_BIAS}
         />
     );
 }
@@ -272,19 +270,19 @@ export default function DayScene() {
     }, []);
 
     return (
-        <div style={{ width: "100vw", height: "100vh", background: "#87CEEB", filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
+        <div style={{ width: "100vw", height: "100vh", background: DAY_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
             <Canvas
                 shadows
                 dpr={[1, 2]}
                 gl={{
                     antialias: true,
                     toneMapping: THREE.ACESFilmicToneMapping,
-                    toneMappingExposure: 1.6,
+                    toneMappingExposure: DAY_LIGHTING.TONE_MAPPING_EXPOSURE,
                 }}
                 camera={{
-                    fov: 48,
-                    near: 0.1,
-                    far: 130,
+                    fov: CAMERA.FOV,
+                    near: CAMERA.NEAR,
+                    far: CAMERA.FAR_DAY,
                     position: [0, 14, 18],
                 }}
             >
@@ -297,16 +295,16 @@ export default function DayScene() {
                         {/* ─── Daytime Lighting ─── */}
 
                         {/* Bright ambient */}
-                        <ambientLight intensity={2.0} color="#fffbe6" />
+                        <ambientLight intensity={DAY_LIGHTING.AMBIENT_INTENSITY} color={DAY_LIGHTING.AMBIENT_COLOR} />
 
                         {/* Sunlight — warm dynamic directional following player */}
                         <DynamicDaySun playerPosRef={playerPosRef} />
 
                         {/* Hemisphere light — blue sky, green ground */}
                         <hemisphereLight
-                            color="#88bbff"
-                            groundColor="#4a6a3a"
-                            intensity={1.1}
+                            color={DAY_LIGHTING.HEMI_SKY}
+                            groundColor={DAY_LIGHTING.HEMI_GROUND}
+                            intensity={DAY_LIGHTING.HEMI_INTENSITY}
                         />
 
                         {/* World */}

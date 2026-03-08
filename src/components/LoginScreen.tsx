@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { setSessionState } from "./useSessionStore";
+import { setSessionState, loadGameData, getSessionState } from "./useSessionStore";
 
 export default function LoginScreen() {
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -51,11 +51,29 @@ export default function LoginScreen() {
       });
       const data = await res.json();
       if (data.ok) {
+        // Transition to game phase but keep loading screen up
+        // by NOT setting gameDataLoaded yet
         setSessionState({
           appPhase: "game",
           mode: "login",
           userEmail: data.email,
+          gameDataLoaded: false,
         });
+
+        // Fetch all saved data from DB (inventory, position, world)
+        await loadGameData();
+
+        // Check if user's saved world requires a different route
+        const session = getSessionState();
+        const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
+        const targetRoute = W_ROUTES[session.currentWorld] || "/";
+        if (window.location.pathname !== targetRoute) {
+          window.location.href = targetRoute;
+          return; // Redirect will reload with full data
+        }
+
+        // Now signal that data is ready — loading screen can dismiss
+        setSessionState({ gameDataLoaded: true });
       } else {
         setError(data.error || "Verification failed");
       }

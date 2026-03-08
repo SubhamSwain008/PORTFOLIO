@@ -1,4 +1,5 @@
 import { EnvItem } from "./environment";
+import { DAY_ENV } from "../components/settings/settings";
 
 // Generate a DIFFERENT deterministic environment layout for the daytime realm
 function generateDayEnvironment(): EnvItem[] {
@@ -13,23 +14,23 @@ function generateDayEnvironment(): EnvItem[] {
     };
 
     // Different seed = different world layout
-    const random = rng(137);
+    const random = rng(DAY_ENV.SEED);
 
     // Trees — more spread out, different positions
-    for (let i = 0; i < 500; i++) {
-        const x = (random() - 0.5) * 440;
-        const z = (random() - 0.5) * 440;
+    for (let i = 0; i < DAY_ENV.TREE_COUNT; i++) {
+        const x = (random() - 0.5) * DAY_ENV.SPREAD;
+        const z = (random() - 0.5) * DAY_ENV.SPREAD;
 
         // Keep center clear for building
-        if (Math.abs(x) < 7 && Math.abs(z) < 7) continue;
+        if (Math.abs(x) < DAY_ENV.BUILDING_EXCLUSION && Math.abs(z) < DAY_ENV.BUILDING_EXCLUSION) continue;
 
-        // Keep portal area clear (portal at x=-10, z=-28.9)
-        const dxP = x - (-10);
-        const dzP = z - (-44.9);
-        if (dxP * dxP + dzP * dzP < 36) continue;
+        // Keep portal area clear
+        const dxP = x - DAY_ENV.PORTAL_EXCLUSION_CENTER[0];
+        const dzP = z - DAY_ENV.PORTAL_EXCLUSION_CENTER[1];
+        if (dxP * dxP + dzP * dzP < DAY_ENV.PORTAL_EXCLUSION_RADIUS * DAY_ENV.PORTAL_EXCLUSION_RADIUS) continue;
 
-        const scale = 0.7 + random() * 1.1;
-        const variant = Math.floor(random() * 5);
+        const scale = DAY_ENV.TREE_SCALE_MIN + random() * DAY_ENV.TREE_SCALE_RANGE;
+        const variant = Math.floor(random() * DAY_ENV.TREE_VARIANTS);
 
         items.push({
             type: "tree",
@@ -40,22 +41,22 @@ function generateDayEnvironment(): EnvItem[] {
     }
 
     // Rocks — different scattering
-    for (let i = 0; i < 300; i++) {
-        const x = (random() - 0.5) * 440;
-        const z = (random() - 0.5) * 440;
+    for (let i = 0; i < DAY_ENV.ROCK_COUNT; i++) {
+        const x = (random() - 0.5) * DAY_ENV.SPREAD;
+        const z = (random() - 0.5) * DAY_ENV.SPREAD;
 
-        if (Math.abs(x) < 6 && Math.abs(z) < 6) continue;
+        if (Math.abs(x) < DAY_ENV.ROCK_BUILDING_EXCLUSION && Math.abs(z) < DAY_ENV.ROCK_BUILDING_EXCLUSION) continue;
 
         // Keep portal area clear
-        const dxP = x - (-10);
-        const dzP = z - (-44.9);
-        if (dxP * dxP + dzP * dzP < 36) continue;
+        const dxP = x - DAY_ENV.PORTAL_EXCLUSION_CENTER[0];
+        const dzP = z - DAY_ENV.PORTAL_EXCLUSION_CENTER[1];
+        if (dxP * dxP + dzP * dzP < DAY_ENV.PORTAL_EXCLUSION_RADIUS * DAY_ENV.PORTAL_EXCLUSION_RADIUS) continue;
 
-        const scale = 0.4 + random() * 1.0;
+        const scale = DAY_ENV.ROCK_SCALE_MIN + random() * DAY_ENV.ROCK_SCALE_RANGE;
 
         items.push({
             type: "rock",
-            pos: [x, scale * 0.15, z],
+            pos: [x, scale * DAY_ENV.ROCK_Y_MULT, z],
             scale,
         });
     }

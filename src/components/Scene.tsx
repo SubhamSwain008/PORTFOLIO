@@ -22,6 +22,10 @@ import PositionAutoSave from "./PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "./MiniMap";
 import StaminaBar from "./StaminaBar";
 import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
+import { NIGHT_LIGHTING, CAMERA, TRANSITION } from "./settings/settings";
+
+// Derive the hex string from settings for fog identity checks
+const FOG_HEX = NIGHT_LIGHTING.FOG_COLOR.replace("#", "");
 
 // ─── Fog Manager (scene-level fog toggle) ────────────────
 function FogManager() {
@@ -30,13 +34,13 @@ function FogManager() {
 
   useFrame(() => {
     if (gameMode === "explore" || gameMode === "transitioning-in" || gameMode === "transitioning-out") {
-      if (!scene.fog || (scene.fog as THREE.Fog).color.getHexString() !== "12141c") {
-        scene.fog = new THREE.Fog("#12141c", 12, 70);
-        scene.background = new THREE.Color("#12141c");
+      if (!scene.fog || (scene.fog as THREE.Fog).color.getHexString() !== FOG_HEX) {
+        scene.fog = new THREE.Fog(NIGHT_LIGHTING.FOG_COLOR, NIGHT_LIGHTING.FOG_NEAR, NIGHT_LIGHTING.FOG_FAR);
+        scene.background = new THREE.Color(NIGHT_LIGHTING.FOG_COLOR);
       }
     } else {
       // Interior mode has its own fog system
-      if (scene.fog && (scene.fog as THREE.Fog).color.getHexString() === "12141c") {
+      if (scene.fog && (scene.fog as THREE.Fog).color.getHexString() === FOG_HEX) {
         scene.fog = null;
         scene.background = new THREE.Color("#000000");
       }
@@ -54,7 +58,7 @@ function FadeOverlay() {
 
   const gameMode = useGameStore((s) => s.gameMode);
   const elapsed = useRef(0);
-  const FADE_DURATION = 0.7; // seconds
+  const FADE_DURATION = TRANSITION.FADE_DURATION; // seconds
 
   useFrame((_, delta) => {
     if (!meshRef.current || !matRef.current) return;
@@ -188,9 +192,9 @@ function DynamicSun({ playerPosRef }: { playerPosRef: React.MutableRefObject<THR
     if (lightRef.current && playerPosRef.current) {
       // Offset light position relative to player
       lightRef.current.position.set(
-        playerPosRef.current.x + 15,
-        playerPosRef.current.y + 30,
-        playerPosRef.current.z + 10
+        playerPosRef.current.x + NIGHT_LIGHTING.MOON_OFFSET[0],
+        playerPosRef.current.y + NIGHT_LIGHTING.MOON_OFFSET[1],
+        playerPosRef.current.z + NIGHT_LIGHTING.MOON_OFFSET[2]
       );
       // Follow player exactly
       lightRef.current.target.position.copy(playerPosRef.current);
@@ -201,20 +205,20 @@ function DynamicSun({ playerPosRef }: { playerPosRef: React.MutableRefObject<THR
   return (
     <directionalLight
       ref={lightRef}
-      intensity={1.8}
-      color="#b0c0ff"
+      intensity={NIGHT_LIGHTING.MOON_INTENSITY}
+      color={NIGHT_LIGHTING.MOON_COLOR}
       castShadow
       // Drastically lower map size because frustum is small!
-      shadow-mapSize-width={512}
-      shadow-mapSize-height={512}
+      shadow-mapSize-width={NIGHT_LIGHTING.SHADOW_MAP_SIZE}
+      shadow-mapSize-height={NIGHT_LIGHTING.SHADOW_MAP_SIZE}
       // Very tight box around player
-      shadow-camera-left={-20}
-      shadow-camera-right={20}
-      shadow-camera-top={20}
-      shadow-camera-bottom={-20}
-      shadow-camera-near={0.5}
-      shadow-camera-far={60}
-      shadow-bias={-0.0005}
+      shadow-camera-left={-NIGHT_LIGHTING.SHADOW_CAMERA_BOUNDS}
+      shadow-camera-right={NIGHT_LIGHTING.SHADOW_CAMERA_BOUNDS}
+      shadow-camera-top={NIGHT_LIGHTING.SHADOW_CAMERA_BOUNDS}
+      shadow-camera-bottom={-NIGHT_LIGHTING.SHADOW_CAMERA_BOUNDS}
+      shadow-camera-near={NIGHT_LIGHTING.SHADOW_NEAR}
+      shadow-camera-far={NIGHT_LIGHTING.SHADOW_FAR}
+      shadow-bias={NIGHT_LIGHTING.SHADOW_BIAS}
     />
   );
 }
@@ -251,19 +255,19 @@ export default function Scene() {
     gameMode === "interior" || gameMode === "transitioning-out";
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#0a0a0f", filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
+    <div style={{ width: "100vw", height: "100vh", background: NIGHT_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
       <Canvas
         shadows
         dpr={[1, 2]}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.4,
+          toneMappingExposure: NIGHT_LIGHTING.TONE_MAPPING_EXPOSURE,
         }}
         camera={{
-          fov: 48,
-          near: 0.1,
-          far: 120,
+          fov: CAMERA.FOV,
+          near: CAMERA.NEAR,
+          far: CAMERA.FAR_NIGHT,
           position: [0, 14, 18],
         }}
       >
@@ -280,7 +284,7 @@ export default function Scene() {
           {isExplore && (
             <group>
               {/* Ambient */}
-              <ambientLight intensity={0.5} color="#4a4a65" />
+              <ambientLight intensity={NIGHT_LIGHTING.AMBIENT_INTENSITY} color={NIGHT_LIGHTING.AMBIENT_COLOR} />
 
               {/* Dynamic Moonlight focusing shadows only on player */}
               <DynamicSun playerPosRef={playerPosRef} />
@@ -288,22 +292,22 @@ export default function Scene() {
               {/* Rim light */}
               <directionalLight
                 position={[-12, 20, -15]}
-                intensity={0.6}
-                color="#7a5a9a"
+                intensity={NIGHT_LIGHTING.RIM_INTENSITY}
+                color={NIGHT_LIGHTING.RIM_COLOR}
               />
 
               {/* Warm ground-bounce fill */}
               <directionalLight
                 position={[5, 8, 20]}
-                intensity={0.35}
+                intensity={NIGHT_LIGHTING.FILL_INTENSITY}
                 color="#5a4a40"
               />
 
               {/* Hemisphere light */}
               <hemisphereLight
-                color="#445577"
-                groundColor="#1a1520"
-                intensity={0.4}
+                color={NIGHT_LIGHTING.HEMI_SKY}
+                groundColor={NIGHT_LIGHTING.HEMI_GROUND}
+                intensity={NIGHT_LIGHTING.HEMI_INTENSITY}
               />
 
               {/* World */}

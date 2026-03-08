@@ -1,14 +1,15 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { STAMINA } from "./settings/settings";
 
 export interface StaminaState {
-  stamina: number; // 0 to 100
+  stamina: number; // 0 to STAMINA.MAX
   isSprinting: boolean;
 }
 
 let state: StaminaState = {
-  stamina: 100,
+  stamina: STAMINA.MAX,
   isSprinting: false,
 };
 

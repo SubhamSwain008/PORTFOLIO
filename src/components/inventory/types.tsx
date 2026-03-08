@@ -1,3 +1,4 @@
+import { ITEM_SPAWN_CONFIG } from "../settings/settings";
 // ─── Item Categories ─────────────────────────────────────
 export type ItemCategory = "food" | "tool";
 

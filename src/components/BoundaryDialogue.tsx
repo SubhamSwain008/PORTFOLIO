@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";
+import { WORLD } from "./settings/settings";
 
-const BOUNDS = 220;
+const BOUNDS = WORLD.BOUNDS;
 const WARN_DIST = 15; // Start warning 15 units before boundary
 
 const MESSAGES = [

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { CollectedItem, SpawnedItem, ITEM_REGISTRY, getItemDef } from "./types";
 import { setSavingStatus } from "../SaveIndicator";
+import { INVENTORY, ITEM_SPAWN_CONFIG, WORLD } from "../settings/settings";
 
 // ─── Inventory State ─────────────────────────────────────
 export interface InventoryState {
@@ -120,18 +121,33 @@ export function generateWorldItems(realm: string): SpawnedItem[] {
   const random = rng(seed);
 
   const spawned: SpawnedItem[] = [];
-  const WORLD_SPREAD = 180; // spread items across the map
-  const EXCLUSION_RADIUS_SQ = 64; // 8-unit radius around building center
-  const PORTAL_X = -10;
-  const PORTAL_Z = -44.9;
-  const PORTAL_EXCLUSION_SQ = 49; // 7-unit radius around portal
+  const WORLD_SPREAD = INVENTORY.WORLD_SPREAD;
+  const EXCLUSION_RADIUS_SQ = INVENTORY.BUILDING_EXCLUSION_SQ;
+  const PORTAL_X = INVENTORY.PORTAL_EXCLUSION_X;
+  const PORTAL_Z = INVENTORY.PORTAL_EXCLUSION_Z;
+  const PORTAL_EXCLUSION_SQ = INVENTORY.PORTAL_EXCLUSION_SQ;
 
-  // Day world gets 4-5x fewer items
-  const dayMultiplier = realm === "day" ? 0.2 : 1.0;
+  // Day world gets fewer items
+  const dayMultiplier = realm === "day" ? INVENTORY.DAY_SPAWN_MULTIPLIER : 1.0;
+
+  // ── GLOBAL ITEM CAP ──
+  // Count total items in player inventory
+  const totalInInventory = inv.items.reduce((sum, i) => sum + i.quantity, 0);
+  // Count items already spawned in the OTHER realm
+  const otherRealm = realm === "night" ? "day" : "night";
+  const otherRealmItems = (inv.worldItems[otherRealm] || []).filter(si => !si.collected).length;
+  let globalBudget = INVENTORY.MAX_TOTAL_ITEMS - totalInInventory - otherRealmItems;
 
   for (const def of ITEM_REGISTRY) {
+    if (globalBudget <= 0) break;
+
     const collected = getCollectedCount(def.id);
-    const toSpawn = Math.max(0, Math.floor(def.maxSpawn * dayMultiplier) - collected);
+    // Apply probability from master config
+    const spawnConfig = ITEM_SPAWN_CONFIG[def.id];
+    const probability = spawnConfig?.probability ?? 1.0;
+    const baseMax = spawnConfig?.maxSpawn ?? def.maxSpawn;
+    const effectiveMax = Math.floor(baseMax * dayMultiplier * probability);
+    const toSpawn = Math.min(Math.max(0, effectiveMax - collected), globalBudget);
 
     for (let i = 0; i < toSpawn; i++) {
       let x: number, z: number;
@@ -143,24 +159,25 @@ export function generateWorldItems(realm: string): SpawnedItem[] {
         z = (random() - 0.5) * WORLD_SPREAD * 2;
         attempts++;
       } while (
-        attempts < 50 &&
+        attempts < INVENTORY.MAX_SPAWN_ATTEMPTS &&
         (
           // Exclude building center
-          (Math.abs(x) < 8 && Math.abs(z) < 8) ||
+          (Math.abs(x) < Math.sqrt(EXCLUSION_RADIUS_SQ) && Math.abs(z) < Math.sqrt(EXCLUSION_RADIUS_SQ)) ||
           // Exclude portal area
           ((x - PORTAL_X) ** 2 + (z - PORTAL_Z) ** 2 < PORTAL_EXCLUSION_SQ) ||
-          // Exclude fence gates (center of each side at ±45)
-          (Math.abs(x) < 5 && Math.abs(Math.abs(z) - 45) < 5) ||
-          (Math.abs(z) < 5 && Math.abs(Math.abs(x) - 45) < 5)
+          // Exclude fence gates (center of each side at ±FENCE_DISTANCE)
+          (Math.abs(x) < INVENTORY.GATE_EXCLUSION_HALF && Math.abs(Math.abs(z) - WORLD.FENCE_DISTANCE) < INVENTORY.GATE_EXCLUSION_HALF) ||
+          (Math.abs(z) < INVENTORY.GATE_EXCLUSION_HALF && Math.abs(Math.abs(x) - WORLD.FENCE_DISTANCE) < INVENTORY.GATE_EXCLUSION_HALF)
         )
       );
 
       spawned.push({
         id: `${realm}_${def.id}_${i}_${seed}`,
         itemId: def.id,
-        position: [x, 0.5, z],
+        position: [x, INVENTORY.SPAWN_Y, z],
         collected: false,
       });
+      globalBudget--;
     }
   }
 
