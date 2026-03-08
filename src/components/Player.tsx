@@ -221,9 +221,9 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       let currentStamina = staminaState.stamina;
 
       if (keys.current["shift"] && currentStamina > 0) {
-        // Sprinting: Double speed, drain 100 stamina in 10s (10 units/sec)
+        // Sprinting: drain 100 stamina in 20s (5 units/sec)
         isSprinting = true;
-        currentStamina = Math.max(0, currentStamina - 10 * delta);
+        currentStamina = Math.max(0, currentStamina - 5 * delta);
         setStaminaState({ stamina: currentStamina, isSprinting: true });
       } else {
         // Normal walking: 1x speed
@@ -232,9 +232,9 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
             setStaminaState({ isSprinting: false });
           }
         } else {
-          // Refill 100 stamina in 60s (1.66 units/sec)
+          // Refill 100 stamina in 30s (~3.33 units/sec)
           if (currentStamina < 100) {
-            currentStamina = Math.min(100, currentStamina + (100 / 60) * delta);
+            currentStamina = Math.min(100, currentStamina + (100 / 30) * delta);
             setStaminaState({ stamina: currentStamina, isSprinting: false });
           } else if (staminaState.isSprinting) {
             setStaminaState({ isSprinting: false });
@@ -244,7 +244,12 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
 
       let speedMultiplier = 1.0;
       if (isSprinting) {
-        speedMultiplier = 1.0 + (currentStamina / 100);
+        // Full 2x speed while stamina > 50, then linearly reduce to 1x at 0
+        if (currentStamina >= 50) {
+          speedMultiplier = 2.0;
+        } else {
+          speedMultiplier = 1.0 + (currentStamina / 50);
+        }
       }
 
       const targetVX = direction.current.x * (SPEED * speedMultiplier);
@@ -266,7 +271,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
         // Idle refill stamina
         const staminaState = getStaminaState();
         if (staminaState.stamina < 100) {
-          const newStamina = Math.min(100, staminaState.stamina + (100 / 60) * delta);
+          const newStamina = Math.min(100, staminaState.stamina + (100 / 30) * delta);
           setStaminaState({ stamina: newStamina, isSprinting: false });
         } else if (staminaState.isSprinting) {
           setStaminaState({ isSprinting: false });

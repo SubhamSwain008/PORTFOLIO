@@ -13,6 +13,7 @@ import { useGameStore } from "../useGameStore";
 import PositionAutoSave from "../PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "../MiniMap";
 import StaminaBar from "../StaminaBar";
+import { useWorldSettings, getBrightnessFilter } from "../useWorldSettings";
 
 // ─── Daytime Fog ───
 function DayFogManager() {
@@ -251,6 +252,8 @@ export default function DayScene() {
     const keys = useRef<Record<string, boolean>>({});
     const playerPosRef = useRef(new THREE.Vector3(0, 0.6, 8));
     const playerAngleRef = useRef(0);
+    const dayBrightness = useWorldSettings((s) => s.day.brightness);
+    const brightnessFilter = getBrightnessFilter("day");
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -269,7 +272,7 @@ export default function DayScene() {
     }, []);
 
     return (
-        <div style={{ width: "100vw", height: "100vh", background: "#87CEEB" }}>
+        <div style={{ width: "100vw", height: "100vh", background: "#87CEEB", filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
             <Canvas
                 shadows
                 dpr={[1, 2]}

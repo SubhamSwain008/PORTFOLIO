@@ -6,6 +6,7 @@ import SettingsOverlay from "@/components/SettingsOverlay";
 import SaveIndicator from "@/components/SaveIndicator";
 import { useSessionStore, setSessionState, getSessionState, initSession } from "@/components/useSessionStore";
 import { setInventoryState } from "@/components/inventory/inventory";
+import { applyVolume } from "@/components/useWorldSettings";
 
 const DayScene = dynamic(() => import("@/components/day/DayScene"), {
     ssr: false,
@@ -17,6 +18,11 @@ export default function RealmPage() {
     const musicEnabled = useSessionStore((s) => s.musicEnabled);
     const [loading, setLoading] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
+
+    // Apply saved volume on mount
+    useEffect(() => {
+        applyVolume("day");
+    }, []);
 
     // Initialize session (loads user + inventory from DB)
     useEffect(() => {

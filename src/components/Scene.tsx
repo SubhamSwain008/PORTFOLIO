@@ -21,6 +21,7 @@ import {
 import PositionAutoSave from "./PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "./MiniMap";
 import StaminaBar from "./StaminaBar";
+import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
 
 // ─── Fog Manager (scene-level fog toggle) ────────────────
 function FogManager() {
@@ -225,6 +226,8 @@ export default function Scene() {
   const playerPosRef = useRef(new THREE.Vector3(0, 0.6, 8));
   const playerAngleRef = useRef(0);
   const gameMode = useGameStore((s) => s.gameMode);
+  const nightBrightness = useWorldSettings((s) => s.night.brightness);
+  const brightnessFilter = getBrightnessFilter("night");
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -248,7 +251,7 @@ export default function Scene() {
     gameMode === "interior" || gameMode === "transitioning-out";
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#0a0a0f" }}>
+    <div style={{ width: "100vw", height: "100vh", background: "#0a0a0f", filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
       <Canvas
         shadows
         dpr={[1, 2]}

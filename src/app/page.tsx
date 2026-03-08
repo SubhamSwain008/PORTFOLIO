@@ -10,6 +10,7 @@ import {
 import ModeSelect from "@/components/ModeSelect";
 import LoginScreen from "@/components/LoginScreen";
 import SettingsOverlay from "@/components/SettingsOverlay";
+import { applyVolume } from "@/components/useWorldSettings";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
   ssr: false,
@@ -27,6 +28,11 @@ export default function Home() {
   // Init session on mount
   useEffect(() => {
     initSession();
+  }, []);
+
+  // Apply saved volume on mount
+  useEffect(() => {
+    applyVolume("night");
   }, []);
 
   // Game loading screen timer (only when entering game phase AND data is loaded)
