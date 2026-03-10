@@ -21,6 +21,8 @@ export interface GameState {
     // ─── Interior Interaction State ───
     isNearFireplace: boolean;
     isCookingUIOpen: boolean;
+    isNearTable: boolean;
+    isEatingUIOpen: boolean;
     // ─── Daytime specific state ───
     isNearDayPortal: boolean;
     isNearDayGate: boolean;
@@ -43,6 +45,8 @@ let state: GameState = {
     isCrossingGate: false,
     isNearFireplace: false,
     isCookingUIOpen: false,
+    isNearTable: false,
+    isEatingUIOpen: false,
     isNearDayPortal: false,
     isNearDayGate: false,
     isDayCrossingGate: false,

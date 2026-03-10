@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useInventoryStore, nearestItemPrompt, removeItems } from "./inventory";
 import { getItemDef, ITEM_REGISTRY } from "./types";
 import { getHungerState, setHungerState } from "../useHungerStore";
+import { getHealthState, setHealthState } from "../useHealthStore";
+import { HEALTH } from "../settings/settings";
 
 // ─── Emoji Icons for items (matching the item theme) ─────
 const ITEM_ICONS: Record<string, string> = {
@@ -18,6 +20,9 @@ const ITEM_ICONS: Record<string, string> = {
   cooked_apple: "🥧",
   roasted_mushroom: "🍢",
   sweet_jam: "🍯",
+  health_potion: "🧪",
+  healing_herb: "🌿",
+  antidote_vial: "🧴",
 };
 
 export default function InventoryHUD() {
@@ -39,14 +44,30 @@ export default function InventoryHUD() {
 
   const handleConsume = (itemId: string) => {
     const def = getItemDef(itemId);
-    if (!def || !def.consumable || !def.hungerRestore) return; // Not edible
+    if (!def || !def.consumable) return; // Not consumable
 
     const success = removeItems(itemId, 1);
-    if (success) {
+    if (!success) return;
+
+    // Medicine → restore health
+    if (def.healthRestore) {
+      const currentHealth = getHealthState().health;
+      const newHealth = Math.min(HEALTH.MAX, currentHealth + def.healthRestore);
+      setHealthState({ health: newHealth });
+
+      fetch("/api/game/save-hunger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ health: newHealth })
+      }).catch(() => {});
+    }
+
+    // Food → restore hunger
+    if (def.hungerRestore) {
       const currentHunger = getHungerState().hunger;
       const newHunger = Math.min(100, currentHunger + def.hungerRestore);
       setHungerState({ hunger: newHunger });
-      
+
       fetch("/api/game/save-hunger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -326,9 +347,14 @@ export default function InventoryHUD() {
                           >
                             {def.category}
                           </div>
-                          {def.consumable && (
+                          {def.consumable && def.hungerRestore && (
                              <div style={{ marginTop: 6, fontSize: "11px", color: "#66ff66", fontWeight: "bold" }}>
                                 [Right Click] Consume (+{def.hungerRestore} Hunger)
+                             </div>
+                          )}
+                          {def.consumable && def.healthRestore && (
+                             <div style={{ marginTop: 6, fontSize: "11px", color: "#ff6666", fontWeight: "bold" }}>
+                                [Right Click] Use (+{def.healthRestore} Health)
                              </div>
                           )}
                         </div>

@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { HALL_INTERIOR } from "../../settings/settings";
-import CookingPrompt from "./CookingPrompt";
 
 // ─── Fireplace Component ─────────────────────────────────
 function Fireplace() {
@@ -630,7 +629,6 @@ export default function HallInteriorWorld() {
 
             {/* ═══ FURNITURE ═══ */}
             <Fireplace />
-            <CookingPrompt />
             <CozyBed />
             <SmallTable />
             <DiningTable />

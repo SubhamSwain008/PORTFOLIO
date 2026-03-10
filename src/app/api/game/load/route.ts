@@ -32,8 +32,8 @@ export async function GET() {
     if (rows.length === 0) {
       // Create default game state
       await sql`
-        INSERT INTO "user_game_state" ("userId", "inventory", "hunger", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
-        VALUES (${userId}, '[]'::jsonb, 100, 0, 1.3, 8, 'night', NOW())
+        INSERT INTO "user_game_state" ("userId", "inventory", "hunger", "health", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
+        VALUES (${userId}, '[]'::jsonb, 100, 100, 0, 1.3, 8, 'night', NOW())
       `;
       rows = await sql`SELECT * FROM "user_game_state" WHERE "userId" = ${userId}`;
     }
@@ -44,6 +44,7 @@ export async function GET() {
       ok: true,
       inventory: state.inventory || [],
       hunger: state.hunger ?? 100,
+      health: state.health ?? 100,
       position: {
         x: state.positionX,
         y: state.positionY,

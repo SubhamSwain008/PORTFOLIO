@@ -53,6 +53,35 @@ export const STAMINA = {
 export const STAMINA_RECOVERY_RATE = STAMINA.MAX / STAMINA.RECOVERY_SECONDS;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  HUNGER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const HUNGER = {
+  /** Seconds for hunger to drain from 100 → 0 */
+  DRAIN_DURATION: 900, // 15 minutes
+  /** Below this %, stamina is locked to 0 */
+  STAMINA_LOCK_THRESHOLD: 30,
+  /** DB save interval in milliseconds */
+  DB_SAVE_INTERVAL: 60_000,
+} as const;
+
+/** Derived: hunger drop per second */
+export const HUNGER_DRAIN_PER_SECOND = 100 / HUNGER.DRAIN_DURATION;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  HEALTH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const HEALTH = {
+  /** Maximum health value */
+  MAX: 100,
+  /** HP lost per second when hunger is 0 */
+  DRAIN_PER_SECOND: 0.5,
+  /** DB save interval in milliseconds */
+  DB_SAVE_INTERVAL: 60_000,
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ┃  WORLD BOUNDS & COLLISION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -184,7 +213,7 @@ export const INVENTORY = {
    * must be strictly less than this number.
    * day spawned + night spawned + player inventory < MAX_TOTAL_ITEMS
    */
-  MAX_TOTAL_ITEMS: 35,
+  MAX_TOTAL_ITEMS: 120,
 
   /** World spread for item placement (±SPREAD from center) */
   WORLD_SPREAD: 380,
@@ -206,16 +235,16 @@ export const INVENTORY = {
    * Day world item multiplier. 1.0 = same as night, 0.2 = 20%.
    * Controls how maxSpawn is scaled for the day world.
    */
-  DAY_SPAWN_MULTIPLIER: 0.2,
+  DAY_SPAWN_MULTIPLIER: 0.5,
 
   /** Pickup distance — how close player must be to collect */
   COLLECT_RADIUS: 3.5,
   /** Distance² to show full 3D models (beyond this → indicator only) */
   MODEL_RADIUS_SQ: 11 * 11,
   /** Distance² beyond which items are fully invisible */
-  VISIBILITY_RADIUS_SQ: 35 * 35,
+  VISIBILITY_RADIUS_SQ: 60 * 60,
   /** Max instanced indicators (performance cap) */
-  MAX_INSTANCES: 40,
+  MAX_INSTANCES: 80,
   /** Indicator orb radius */
   INDICATOR_RADIUS: 0.2,
   /** Indicator hover height and bob amplitude */
@@ -236,16 +265,20 @@ export const INVENTORY = {
  * Set to 1.0 for normal spawning. 0.5 = half as likely. 0 = disabled.
  */
 export const ITEM_SPAWN_CONFIG: Record<string, { maxSpawn: number; probability: number }> = {
-  // ── Foods ──
-  mystic_apple: { maxSpawn: 5, probability: 1.0 },
-  golden_bread: { maxSpawn: 5, probability: 1.0 },
-  shadow_mushroom: { maxSpawn: 5, probability: 1.0 },
-  ember_berry: { maxSpawn: 5, probability: 1.0 },
-  moon_cheese: { maxSpawn: 5, probability: 1.0 },
+  // ── Foods (plentiful across the large world) ──
+  mystic_apple:    { maxSpawn: 12, probability: 1.0 },
+  golden_bread:    { maxSpawn: 12, probability: 1.0 },
+  shadow_mushroom: { maxSpawn: 12, probability: 1.0 },
+  ember_berry:     { maxSpawn: 12, probability: 1.0 },
+  moon_cheese:     { maxSpawn: 10, probability: 1.0 },
   // ── Tools ──
-  crystal_pickaxe: { maxSpawn: 3, probability: 1.0 },
-  torch: { maxSpawn: 3, probability: 1.0 },
-  ancient_compass: { maxSpawn: 1, probability: 1.0 },
+  crystal_pickaxe: { maxSpawn: 4, probability: 1.0 },
+  torch:           { maxSpawn: 4, probability: 1.0 },
+  ancient_compass: { maxSpawn: 2, probability: 1.0 },
+  // ── Medicine ──
+  health_potion:   { maxSpawn: 6, probability: 1.0 },
+  healing_herb:    { maxSpawn: 8, probability: 1.0 },
+  antidote_vial:   { maxSpawn: 4, probability: 1.0 },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -435,6 +468,11 @@ export const HALL_INTERIOR = {
 
   /** Fireplace position (back wall center) */
   FIREPLACE_POS: [0, 0, -8.3] as const,
+
+  /** Dining table position (center of room) */
+  TABLE_POS: [0, 0, 0] as const,
+  /** Table proximity radius for eating */
+  TABLE_RADIUS: 3.5,
 
   /** Lighting */
   AMBIENT_COLOR: "#ffead2",

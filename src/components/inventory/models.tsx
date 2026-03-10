@@ -40,6 +40,16 @@ const flameGeo = new THREE.SphereGeometry(0.1, 4, 4);
 const compassBaseGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.06, 8);
 const needleGeo = new THREE.ConeGeometry(0.03, 0.14, 3);
 
+// Medicine geometries
+const potionBodyGeo = new THREE.CylinderGeometry(0.12, 0.15, 0.35, 6);
+const potionNeckGeo = new THREE.CylinderGeometry(0.05, 0.1, 0.1, 6);
+const potionCorkGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.06, 4);
+const herbLeafGeo = new THREE.SphereGeometry(0.14, 5, 4);
+const herbStemGeo = new THREE.CylinderGeometry(0.015, 0.02, 0.2, 3);
+const vialBodyGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.4, 6);
+const vialCorkGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 4);
+const corkMat = new THREE.MeshStandardMaterial({ color: "#8a6a40", roughness: 0.9 });
+
 // ─── Simplified Food Models (no castShadow, no lights) ──────
 
 function AppleModel({ color, emissive }: { color: string; emissive: string }) {
@@ -123,6 +133,49 @@ function CompassModel({ color, emissive }: { color: string; emissive: string }) 
   );
 }
 
+// ─── Medicine Models ──────
+
+function PotionModel({ color, emissive }: { color: string; emissive: string }) {
+  const mat = useMemo(() => getSharedMat(color, emissive, 1.2, 0.2, 0.3), [color, emissive]);
+  return (
+    <group>
+      {/* Bottle body */}
+      <mesh geometry={potionBodyGeo} position={[0, -0.05, 0]}><primitive object={mat} attach="material" /></mesh>
+      {/* Neck */}
+      <mesh geometry={potionNeckGeo} position={[0, 0.18, 0]}><primitive object={mat} attach="material" /></mesh>
+      {/* Cork */}
+      <mesh geometry={potionCorkGeo} position={[0, 0.26, 0]}><primitive object={corkMat} attach="material" /></mesh>
+    </group>
+  );
+}
+
+function HerbModel({ color, emissive }: { color: string; emissive: string }) {
+  const mat = useMemo(() => getSharedMat(color, emissive, 0.8, 0.6, 0.05), [color, emissive]);
+  return (
+    <group>
+      {/* Center leaf cluster */}
+      <mesh geometry={herbLeafGeo} position={[0, 0.06, 0]}><primitive object={mat} attach="material" /></mesh>
+      <mesh geometry={herbLeafGeo} position={[0.1, 0.1, 0.05]} scale={[0.8, 0.8, 0.8]}><primitive object={mat} attach="material" /></mesh>
+      <mesh geometry={herbLeafGeo} position={[-0.08, 0.08, -0.04]} scale={[0.7, 0.7, 0.7]}><primitive object={mat} attach="material" /></mesh>
+      {/* Stems */}
+      <mesh geometry={herbStemGeo} position={[0, -0.08, 0]}><primitive object={stemMat} attach="material" /></mesh>
+      <mesh geometry={herbStemGeo} position={[0.06, -0.06, 0.03]} rotation={[0.2, 0, 0.15]}><primitive object={stemMat} attach="material" /></mesh>
+    </group>
+  );
+}
+
+function VialModel({ color, emissive }: { color: string; emissive: string }) {
+  const mat = useMemo(() => getSharedMat(color, emissive, 1.0, 0.15, 0.4), [color, emissive]);
+  return (
+    <group>
+      {/* Slim glass body */}
+      <mesh geometry={vialBodyGeo} position={[0, -0.02, 0]}><primitive object={mat} attach="material" /></mesh>
+      {/* Cork stopper */}
+      <mesh geometry={vialCorkGeo} position={[0, 0.22, 0]}><primitive object={corkMat} attach="material" /></mesh>
+    </group>
+  );
+}
+
 // ─── Model Selector ──────────────────────────────────────
 const MODEL_MAP: Record<string, React.FC<{ color: string; emissive: string }>> = {
   mystic_apple: AppleModel,
@@ -133,6 +186,9 @@ const MODEL_MAP: Record<string, React.FC<{ color: string; emissive: string }>> =
   crystal_pickaxe: PickaxeModel,
   torch: TorchModel,
   ancient_compass: CompassModel,
+  health_potion: PotionModel,
+  healing_herb: HerbModel,
+  antidote_vial: VialModel,
 };
 
 // ─── Animated Item Wrapper (lightweight — no lights, no shadows) ─

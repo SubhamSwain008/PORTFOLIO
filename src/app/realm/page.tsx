@@ -7,9 +7,12 @@ import SaveIndicator from "@/components/SaveIndicator";
 import { useSessionStore, setSessionState, getSessionState, initSession } from "@/components/useSessionStore";
 import { setInventoryState } from "@/components/inventory/inventory";
 import { setHungerState } from "@/components/useHungerStore";
+import { setHealthState } from "@/components/useHealthStore";
 import { applyVolume } from "@/components/useWorldSettings";
 import HungerBar from "@/components/HungerBar";
+import HealthBar from "@/components/HealthBar";
 import HungerManager from "@/components/HungerManager";
+import DeathOverlay from "@/components/DeathOverlay";
 
 const DayScene = dynamic(() => import("@/components/day/DayScene"), {
     ssr: false,
@@ -43,6 +46,9 @@ export default function RealmPage() {
                         }
                         if (gameData.ok && gameData.hunger !== undefined) {
                             setHungerState({ hunger: gameData.hunger });
+                        }
+                        if (gameData.ok && gameData.health !== undefined) {
+                            setHealthState({ health: gameData.health });
                         }
                     }
                 } catch {
@@ -216,9 +222,11 @@ export default function RealmPage() {
             {/* Save indicator — bottom-right */}
             <SaveIndicator />
 
-            {/* Hunger overlay */}
+            {/* Survival System */}
             <HungerManager />
             <HungerBar />
+            <HealthBar />
+            <DeathOverlay />
 
             {/* Hidden Day Audio — separate track from night world */}
             <audio

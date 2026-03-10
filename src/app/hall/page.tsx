@@ -5,8 +5,14 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import InventoryHUD from "@/components/inventory/InventoryHUD";
 import CookingHUD from "@/components/interior/hall/CookingHUD";
+import CookingPrompt from "@/components/interior/hall/CookingPrompt";
+import EatingHUD from "@/components/interior/hall/EatingHUD";
+import EatingPrompt from "@/components/interior/hall/EatingPrompt";
 import HungerBar from "@/components/HungerBar";
+import HealthBar from "@/components/HealthBar";
+import StaminaBar from "@/components/StaminaBar";
 import HungerManager from "@/components/HungerManager";
+import DeathOverlay from "@/components/DeathOverlay";
 import { loadGameData, setSessionState, getSessionState, initSession } from "@/components/useSessionStore";
 
 const HallInteriorScene = dynamic(
@@ -31,6 +37,8 @@ export default function HallPage() {
         const allowed = sessionStorage.getItem("hallEntryAllowed");
         if (allowed === "true") {
             setAuthorized(true);
+            // Consume the token — one-time use only (must walk through door again)
+            sessionStorage.removeItem("hallEntryAllowed");
         } else {
             // Not authorized — show denial message then redirect
             setDenied(true);
@@ -315,12 +323,19 @@ export default function HallPage() {
             {/* 3D Interior Scene */}
             <HallInteriorScene />
 
-            {/* Inventory Overlay */}
+            {/* Overlay HUDs */}
             <InventoryHUD />
+            <CookingPrompt />
+            <CookingHUD />
+            <EatingPrompt />
+            <EatingHUD />
 
-            {/* Hunger System */}
+            {/* Survival System */}
             <HungerManager />
             <HungerBar />
+            <HealthBar />
+            <StaminaBar />
+            <DeathOverlay />
         </>
     );
 }

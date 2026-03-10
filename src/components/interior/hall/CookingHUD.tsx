@@ -6,6 +6,23 @@ import { useInventoryStore, removeItems, addItems } from "../../inventory/invent
 import { RECIPES, Recipe } from "../../inventory/recipes";
 import { ITEM_REGISTRY, getItemDef } from "../../inventory/types";
 
+const ITEM_ICONS: Record<string, string> = {
+  mystic_apple: "🍎",
+  golden_bread: "🍞",
+  shadow_mushroom: "🍄",
+  ember_berry: "🫐",
+  moon_cheese: "🧀",
+  crystal_pickaxe: "⛏️",
+  torch: "🔥",
+  ancient_compass: "🧭",
+  cooked_apple: "🥧",
+  roasted_mushroom: "🍢",
+  sweet_jam: "🍯",
+  health_potion: "🧪",
+  healing_herb: "🌿",
+  antidote_vial: "🧴",
+};
+
 export default function CookingHUD() {
     const isCookingUIOpen = useGameStore(s => s.isCookingUIOpen);
     const intentItems = useInventoryStore(s => s.items);
@@ -126,7 +143,10 @@ export default function CookingHUD() {
                                         transition: "all 0.2s"
                                     }}
                                 >
-                                    <div style={{ fontWeight: "bold" }}>{recipe.name}</div>
+                                    <div style={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span style={{ fontSize: 20 }}>{ITEM_ICONS[recipe.resultItemId] || "🍳"}</span>
+                                        {recipe.name}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -149,11 +169,18 @@ export default function CookingHUD() {
                                 <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
                                     <div style={{
                                         width: 64, height: 64, 
-                                        backgroundColor: resultDef?.color || "#fff",
-                                        border: "2px solid #5c3a21", // Just a color square for abstraction
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 40,
+                                        backgroundColor: "rgba(0,0,0,0.3)",
+                                        border: "2px solid #5c3a21",
+                                        borderRadius: 8,
                                         boxShadow: `0 0 10px ${resultDef?.emissive || "#000"}`,
                                         marginRight: 16
-                                    }}/>
+                                    }}>
+                                        {ITEM_ICONS[selectedRecipe.resultItemId] || "🍳"}
+                                    </div>
                                     <div>
                                         <h2 style={{ margin: 0, color: "#ffc288", fontSize: 24 }}>{selectedRecipe.name}</h2>
                                         <p style={{ margin: "4px 0 0 0", color: "#a09080", fontSize: 14 }}>
@@ -181,6 +208,7 @@ export default function CookingHUD() {
                                                     borderRadius: 4
                                                 }}>
                                                     <span style={{ color: def?.color || "#fff", textShadow: `0 0 5px ${def?.emissive || "#000"}` }}>
+                                                        <span style={{ marginRight: 6 }}>{ITEM_ICONS[ing.itemId] || "📦"}</span>
                                                         {def?.name}
                                                     </span>
                                                     <span style={{ color: hasEnough ? "#44ff44" : "#ff4444" }}>
