@@ -13,6 +13,7 @@ import BoundaryDialogue from "./BoundaryDialogue";
 import InventoryHUD from "./inventory/InventoryHUD";
 import SaveIndicator, { setSavingStatus } from "./SaveIndicator";
 import { getSessionState } from "./useSessionStore";
+import { getHungerState } from "./useHungerStore";
 import {
   useGameStore,
   getGameState,
@@ -21,6 +22,8 @@ import {
 import PositionAutoSave from "./PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "./MiniMap";
 import StaminaBar from "./StaminaBar";
+import HungerBar from "./HungerBar";
+import HungerManager from "./HungerManager";
 import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
 import { NIGHT_LIGHTING, CAMERA, TRANSITION } from "./settings/settings";
 
@@ -29,21 +32,13 @@ const FOG_HEX = NIGHT_LIGHTING.FOG_COLOR.replace("#", "");
 
 // ─── Fog Manager (scene-level fog toggle) ────────────────
 function FogManager() {
-  const gameMode = useGameStore((s) => s.gameMode);
   const { scene } = useThree();
 
   useFrame(() => {
-    if (gameMode === "explore" || gameMode === "transitioning-in" || gameMode === "transitioning-out") {
-      if (!scene.fog || (scene.fog as THREE.Fog).color.getHexString() !== FOG_HEX) {
-        scene.fog = new THREE.Fog(NIGHT_LIGHTING.FOG_COLOR, NIGHT_LIGHTING.FOG_NEAR, NIGHT_LIGHTING.FOG_FAR);
-        scene.background = new THREE.Color(NIGHT_LIGHTING.FOG_COLOR);
-      }
-    } else {
-      // Interior mode has its own fog system
-      if (scene.fog && (scene.fog as THREE.Fog).color.getHexString() === FOG_HEX) {
-        scene.fog = null;
-        scene.background = new THREE.Color("#000000");
-      }
+    // Always apply night fog (interior is on a separate page now)
+    if (!scene.fog || (scene.fog as THREE.Fog).color.getHexString() !== FOG_HEX) {
+      scene.fog = new THREE.Fog(NIGHT_LIGHTING.FOG_COLOR, NIGHT_LIGHTING.FOG_NEAR, NIGHT_LIGHTING.FOG_FAR);
+      scene.background = new THREE.Color(NIGHT_LIGHTING.FOG_COLOR);
     }
   });
 
@@ -70,41 +65,10 @@ function FadeOverlay() {
     meshRef.current.quaternion.copy(camera.quaternion);
 
     if (gameMode === "transitioning-in") {
+      // Fade to black before page navigation to /hall
       elapsed.current += delta;
       const progress = Math.min(elapsed.current / FADE_DURATION, 1);
       matRef.current.opacity = progress;
-
-      if (progress >= 1) {
-        setGameState({
-          gameMode: "interior",
-          transitionProgress: 1,
-          isNearEntrance: false,
-        });
-        elapsed.current = 0;
-      }
-    } else if (gameMode === "transitioning-out") {
-      elapsed.current += delta;
-      const progress = Math.min(elapsed.current / FADE_DURATION, 1);
-      // Fade OUT: opacity goes 1 → 0
-      matRef.current.opacity = 1 - progress;
-
-      if (progress >= 1) {
-        setGameState({
-          gameMode: "explore",
-          transitionProgress: 0,
-          isNearExit: false,
-        });
-        elapsed.current = 0;
-      }
-    } else if (gameMode === "interior") {
-      // Keep faded out during interior entry — quickly fade from black
-      if (elapsed.current < FADE_DURATION) {
-        elapsed.current += delta;
-        const progress = Math.min(elapsed.current / FADE_DURATION, 1);
-        matRef.current.opacity = 1 - progress;
-      } else {
-        matRef.current.opacity = 0;
-      }
     } else {
       // explore mode — ensure transparent
       matRef.current.opacity = 0;
@@ -132,7 +96,7 @@ function XKeyHandler() {
   const xPressed = useRef(false);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "x" && !e.repeat) {
         xPressed.current = true;
         const state = getGameState();
@@ -144,23 +108,34 @@ function XKeyHandler() {
         }
 
         if (state.gameMode === "explore" && state.isNearPortal) {
+          const session = getSessionState();
+          if (session.mode === "login") {
+            try {
+              await fetch("/api/game/save-hunger", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hunger: getHungerState().hunger }),
+              });
+            } catch (err) {}
+          }
           // Navigate to the daytime realm — full page nav frees night world memory
           window.location.href = "/realm?portal=true";
           return;
         } else if (state.gameMode === "explore" && state.isNearEntrance) {
-          setGameState({ gameMode: "transitioning-in", transitionProgress: 0 });
-        } else if (state.gameMode === "interior" && state.isNearExit && state.currentFloor === 0) {
-          setGameState({ gameMode: "transitioning-out", transitionProgress: 0 });
-        } else if (state.gameMode === "interior" && state.isNearStairs && state.pendingFloor === null) {
-          // ─── Floor transition (via fade) ───
-          if (state.currentFloor === 0) {
-            setGameState({ pendingFloor: 1 });
-          } else {
-            setGameState({ pendingFloor: 0 });
+          // Navigate to the hall interior page
+          sessionStorage.setItem("hallEntryAllowed", "true");
+          const session = getSessionState();
+          if (session.mode === "login") {
+            try {
+              await fetch("/api/game/save-hunger", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hunger: getHungerState().hunger }),
+              });
+            } catch (err) {}
           }
-        } else if (state.gameMode === "interior" && state.isNearUpperDoor && state.currentFloor === 1) {
-          // ─── Suicide door ───
-          setGameState({ isDead: true });
+          window.location.href = "/hall";
+          return;
         }
       }
     };
@@ -250,9 +225,7 @@ export default function Scene() {
   }, []);
 
   const isExplore =
-    gameMode === "explore" || gameMode === "transitioning-in";
-  const isInterior =
-    gameMode === "interior" || gameMode === "transitioning-out";
+    gameMode === "explore" || gameMode === "transitioning-in" || gameMode === "transitioning-out";
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: NIGHT_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
@@ -334,9 +307,9 @@ export default function Scene() {
           )}
 
           {/* ═══════════════════════════════════════════════
-             INTERIOR MODE (To be implemented modularly)
+             INTERIOR MODE — Handled on separate /hall page
+             to save GPU by not rendering both worlds at once
            ═══════════════════════════════════════════════ */}
-          {/* Portfolio and Game interior instances will be injected here */}
 
         </Suspense>
       </Canvas>
@@ -353,6 +326,8 @@ export default function Scene() {
       {/* ─── HUD Overlay ─── */}
       {isExplore && <MiniMap />}
       <StaminaBar />
+      <HungerBar />
+      <HungerManager />
     </div>
   );
 }

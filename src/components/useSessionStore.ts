@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { setInventoryState } from "./inventory/inventory";
+import { setHungerState } from "./useHungerStore";
 
 // ─── Types ───────────────────────────────────────────────
 export type AppPhase = "loading" | "mode-select" | "login" | "game";
@@ -69,6 +70,10 @@ export async function loadGameData(): Promise<boolean> {
         if (gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
           setInventoryState({ items: gameData.inventory });
         }
+        // Hydrate hunger store
+        if (gameData.hunger !== undefined) {
+          setHungerState({ hunger: gameData.hunger });
+        }
         // Store initial position and world
         if (gameData.position) {
           setSessionState({
@@ -115,7 +120,8 @@ export async function initSession() {
           const targetRoute = W_ROUTES[session.currentWorld] || "/";
           
           // If we are not currently on the persistent world's route, redirect before rendering game
-          if (window.location.pathname !== targetRoute) {
+          const isHall = window.location.pathname === "/hall";
+          if (!isHall && window.location.pathname !== targetRoute) {
             window.location.href = targetRoute;
             return; // Stop initialization render
           }

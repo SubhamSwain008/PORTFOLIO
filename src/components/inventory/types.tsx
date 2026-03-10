@@ -11,6 +11,8 @@ export interface InventoryItemDef {
   color: string;       // primary color for the 3D model
   emissive: string;    // glow color
   maxSpawn: number;    // max number that can exist in the world at once
+  consumable?: boolean; // Can it be eaten?
+  hungerRestore?: number; // How much it restores
 }
 
 // ─── Collected item in player inventory ──────────────────
@@ -75,6 +77,41 @@ export const ITEM_REGISTRY: InventoryItemDef[] = [
     color: "#b0c8e8",
     emissive: "#c8e0ff",
     maxSpawn: 4,
+  },
+
+  // ── Cooked Foods ──
+  {
+    id: "cooked_apple",
+    name: "Roasted Apple",
+    category: "food",
+    description: "A warm, caramelized mystic apple. Restores 15 hunger.",
+    color: "#cc4422",
+    emissive: "#ff6644",
+    maxSpawn: 0, // Cannot spawn in the wild
+    consumable: true,
+    hungerRestore: 15,
+  },
+  {
+    id: "roasted_mushroom",
+    name: "Mushroom Skewer",
+    category: "food",
+    description: "Savory roasted shadow mushrooms. Restores 25 hunger.",
+    color: "#9a4a7a",
+    emissive: "#cc66aa",
+    maxSpawn: 0,
+    consumable: true,
+    hungerRestore: 25,
+  },
+  {
+    id: "sweet_jam",
+    name: "Moonberry Jam",
+    category: "food",
+    description: "A rich, glowing jam made from berries and cheese. Restores 40 hunger.",
+    color: "#d04060",
+    emissive: "#f06080",
+    maxSpawn: 0,
+    consumable: true,
+    hungerRestore: 40,
   },
 
   // ── Tools ──

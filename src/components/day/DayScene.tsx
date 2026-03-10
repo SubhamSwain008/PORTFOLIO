@@ -13,6 +13,8 @@ import { useGameStore } from "../useGameStore";
 import PositionAutoSave from "../PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "../MiniMap";
 import StaminaBar from "../StaminaBar";
+import { getSessionState } from "../useSessionStore";
+import { getHungerState } from "../useHungerStore";
 import { useWorldSettings, getBrightnessFilter } from "../useWorldSettings";
 import { DAY_LIGHTING, CAMERA, TRANSITION, GATE, PORTAL } from "../settings/settings";
 
@@ -190,9 +192,19 @@ function DayXKeyHandler() {
     nearRef.current = isNearPortal;
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handleKeyDown = async (e: KeyboardEvent) => {
             if (e.key.toLowerCase() === "x" && !e.repeat) {
                 if (nearRef.current) {
+                    const session = getSessionState();
+                    if (session.mode === "login") {
+                        try {
+                            await fetch("/api/game/save-hunger", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ hunger: getHungerState().hunger }),
+                            });
+                        } catch (err) {}
+                    }
                     // Navigate back to night world — full page reload frees all day world memory
                     window.location.href = "/?portal=true";
                 }

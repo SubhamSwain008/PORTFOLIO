@@ -18,6 +18,9 @@ export interface GameState {
     isNearPortal: boolean; // New portal door proximity
     isNearGate: boolean;   // Near a fence gate opening
     isCrossingGate: boolean; // Auto-walking through a gate
+    // ─── Interior Interaction State ───
+    isNearFireplace: boolean;
+    isCookingUIOpen: boolean;
     // ─── Daytime specific state ───
     isNearDayPortal: boolean;
     isNearDayGate: boolean;
@@ -38,6 +41,8 @@ let state: GameState = {
     isNearPortal: false,
     isNearGate: false,
     isCrossingGate: false,
+    isNearFireplace: false,
+    isCookingUIOpen: false,
     isNearDayPortal: false,
     isNearDayGate: false,
     isDayCrossingGate: false,

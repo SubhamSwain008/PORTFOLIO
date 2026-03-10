@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useInventoryStore, nearestItemPrompt } from "./inventory";
+import { useInventoryStore, nearestItemPrompt, removeItems } from "./inventory";
 import { getItemDef, ITEM_REGISTRY } from "./types";
+import { getHungerState, setHungerState } from "../useHungerStore";
 
 // ─── Emoji Icons for items (matching the item theme) ─────
 const ITEM_ICONS: Record<string, string> = {
@@ -14,6 +15,9 @@ const ITEM_ICONS: Record<string, string> = {
   crystal_pickaxe: "⛏️",
   torch: "🔥",
   ancient_compass: "🧭",
+  cooked_apple: "🥧",
+  roasted_mushroom: "🍢",
+  sweet_jam: "🍯",
 };
 
 export default function InventoryHUD() {
@@ -32,6 +36,24 @@ export default function InventoryHUD() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  const handleConsume = (itemId: string) => {
+    const def = getItemDef(itemId);
+    if (!def || !def.consumable || !def.hungerRestore) return; // Not edible
+
+    const success = removeItems(itemId, 1);
+    if (success) {
+      const currentHunger = getHungerState().hunger;
+      const newHunger = Math.min(100, currentHunger + def.hungerRestore);
+      setHungerState({ hunger: newHunger });
+      
+      fetch("/api/game/save-hunger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hunger: newHunger })
+      }).catch(() => {});
+    }
+  };
 
   // Poll the mutable nearestItemPrompt via rAF — zero React re-renders
   useEffect(() => {
@@ -200,6 +222,10 @@ export default function InventoryHUD() {
                       key={def.id}
                       onMouseEnter={() => setHoveredItem(def.id)}
                       onMouseLeave={() => setHoveredItem(null)}
+                      onContextMenu={(e) => {
+                         e.preventDefault();
+                         handleConsume(def.id);
+                      }}
                       style={{
                         position: "relative",
                         background: isHovered
@@ -300,6 +326,11 @@ export default function InventoryHUD() {
                           >
                             {def.category}
                           </div>
+                          {def.consumable && (
+                             <div style={{ marginTop: 6, fontSize: "11px", color: "#66ff66", fontWeight: "bold" }}>
+                                [Right Click] Consume (+{def.hungerRestore} Hunger)
+                             </div>
+                          )}
                         </div>
                       )}
                     </div>

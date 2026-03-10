@@ -22,14 +22,26 @@ export async function POST(req: NextRequest) {
     const { neon } = require('@neondatabase/serverless');
     const sql = neon(process.env.neon_db_direct || process.env.DATABASE_URL || "");
     
-    await sql`
-      INSERT INTO "users" ("email", "otp", "otp_expires", "created_at")
-      VALUES (${email}, ${otp}, ${expiresAt}, NOW())
-      ON CONFLICT ("email")
-      DO UPDATE SET
-        "otp" = EXCLUDED."otp",
-        "otp_expires" = EXCLUDED."otp_expires";
-    `;
+    // Retry logic in case Neon DB is currently waking up from sleep and taking longer than 10s
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await sql`
+          INSERT INTO "users" ("email", "otp", "otp_expires", "created_at")
+          VALUES (${email}, ${otp}, ${expiresAt}, NOW())
+          ON CONFLICT ("email")
+          DO UPDATE SET
+            "otp" = EXCLUDED."otp",
+            "otp_expires" = EXCLUDED."otp_expires";
+        `;
+        break; // success
+      } catch (err: any) {
+        retries--;
+        console.warn(`Neon DB connection failed, retrying... (${retries} attempts left). Error: ${err.message}`);
+        if (retries === 0) throw err;
+        await new Promise((res) => setTimeout(res, 1500));
+      }
+    }
     console.log("Sending OTP via Resend...");
 
     const { data, error } = await resend.emails.send({

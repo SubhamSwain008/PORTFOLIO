@@ -237,15 +237,15 @@ export const INVENTORY = {
  */
 export const ITEM_SPAWN_CONFIG: Record<string, { maxSpawn: number; probability: number }> = {
   // ── Foods ──
-  mystic_apple:     { maxSpawn: 5, probability: 1.0 },
-  golden_bread:     { maxSpawn: 5, probability: 1.0 },
-  shadow_mushroom:  { maxSpawn: 5, probability: 1.0 },
-  ember_berry:      { maxSpawn: 5, probability: 1.0 },
-  moon_cheese:      { maxSpawn: 5, probability: 1.0 },
+  mystic_apple: { maxSpawn: 5, probability: 1.0 },
+  golden_bread: { maxSpawn: 5, probability: 1.0 },
+  shadow_mushroom: { maxSpawn: 5, probability: 1.0 },
+  ember_berry: { maxSpawn: 5, probability: 1.0 },
+  moon_cheese: { maxSpawn: 5, probability: 1.0 },
   // ── Tools ──
-  crystal_pickaxe:  { maxSpawn: 3, probability: 1.0 },
-  torch:            { maxSpawn: 3, probability: 1.0 },
-  ancient_compass:  { maxSpawn: 1, probability: 1.0 },
+  crystal_pickaxe: { maxSpawn: 3, probability: 1.0 },
+  torch: { maxSpawn: 3, probability: 1.0 },
+  ancient_compass: { maxSpawn: 1, probability: 1.0 },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -254,9 +254,9 @@ export const ITEM_SPAWN_CONFIG: Record<string, { maxSpawn: number; probability: 
 
 export const CAMERA = {
   /** Camera vertical height above the player */
-  OFFSET_Y: 8,
+  OFFSET_Y: 6,
   /** Camera distance behind the player */
-  OFFSET_Z: -10,
+  OFFSET_Z: -8,
   /** Camera position smoothing (lower = smoother follow) */
   POSITION_LERP: 0.05,
   /** Height that the camera looks at (above player origin) */
@@ -310,7 +310,7 @@ export const DAY_LIGHTING = {
   FOG_COLOR: "#c0daf0",
   FOG_NEAR: 16,
   FOG_FAR: 45,
-  BACKGROUND_COLOR: "#87CEEB",
+  BACKGROUND_COLOR: "#c0daf0",
   TONE_MAPPING_EXPOSURE: 1.6,
   AMBIENT_COLOR: "#fffbe6",
   AMBIENT_INTENSITY: 2.0,
@@ -405,6 +405,52 @@ export const BUILDING = {
   WALL_THICKNESS: 0.5,
   DOOR_WIDTH: 2,
   DOOR_HEIGHT: 4,
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  HALL INTERIOR (Night Hall)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const HALL_INTERIOR = {
+  /** Interior room dimensions (slightly smaller than building exterior) */
+  ROOM_WIDTH: 18,
+  ROOM_DEPTH: 17,
+  ROOM_HEIGHT: 6,
+  WALL_THICKNESS: 0.3,
+
+  /** Floor material */
+  FLOOR_COLOR: "#3a2a1a",
+
+  /** Player spawn position inside the room */
+  SPAWN_POS: [0, 0.6, 7.5] as const,
+  /** Player spawn facing angle (facing into the room) */
+  SPAWN_ANGLE: Math.PI,
+
+  /** Exit door trigger zone */
+  EXIT_POS: [0, 0, 8.0] as const,
+  EXIT_RADIUS: 1.5,
+
+  /** Bed position (corner) */
+  BED_POS: [-7.5, 0, -6.5] as const,
+
+  /** Fireplace position (back wall center) */
+  FIREPLACE_POS: [0, 0, -8.3] as const,
+
+  /** Lighting */
+  AMBIENT_COLOR: "#ffead2",
+  AMBIENT_INTENSITY: 8.0,
+  FIRE_COLOR: "#ffa722ff",
+  FIRE_INTENSITY: 12,
+  FIRE_DISTANCE: 10,
+
+  /** Camera settings for interior */
+  CAM_OFFSET_Y: 6,
+  CAM_OFFSET_Z: -7,
+  CAM_FOV: 60,
+  CAM_LERP: 0.06,
+
+  /** Player walk speed (slower indoors) */
+  WALK_SPEED: 4,
 } as const;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

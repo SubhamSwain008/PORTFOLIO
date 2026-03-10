@@ -83,15 +83,75 @@ export function collectItem(itemId: string, realm: string, spawnId: string) {
   });
 
   // Fire-and-forget: save to DB (non-blocking)
-  const collected = newItems.find((i) => i.itemId === itemId);
-  if (collected) {
+  const collectedItem = newItems.find((i) => i.itemId === itemId);
+  if (collectedItem) {
     setSavingStatus("Saving…");
     fetch("/api/game/save-item", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, quantity: collected.quantity }),
+      body: JSON.stringify({ itemId, quantity: collectedItem.quantity }),
     }).catch(() => {}); // silent fail — don't break the game
   }
+}
+
+// ─── Add an item arbitrarily (without world spawn ID) ────────
+export function addItems(itemId: string, amount: number = 1) {
+  const current = getInventoryState();
+  const existing = current.items.find((i) => i.itemId === itemId);
+  let newItems: CollectedItem[];
+  let finalQuantity = amount;
+
+  if (existing) {
+    newItems = current.items.map((i) => {
+      if (i.itemId === itemId) {
+        finalQuantity = i.quantity + amount;
+        return { ...i, quantity: finalQuantity };
+      }
+      return i;
+    });
+  } else {
+    newItems = [...current.items, { itemId, quantity: amount }];
+  }
+
+  setInventoryState({ items: newItems });
+  setSavingStatus("Saving…");
+  fetch("/api/game/save-item", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId, quantity: finalQuantity }),
+  }).catch(() => {});
+}
+
+// ─── Remove an item arbitrarily ──────────────────────────────
+export function removeItems(itemId: string, amount: number = 1): boolean {
+  const current = getInventoryState();
+  const existing = current.items.find((i) => i.itemId === itemId);
+
+  if (!existing || existing.quantity < amount) {
+    return false; // Cannot remove if insufficient quantity
+  }
+
+  let finalQuantity = existing.quantity - amount;
+  let newItems: CollectedItem[];
+
+  if (finalQuantity <= 0) {
+    finalQuantity = 0;
+    newItems = current.items.filter((i) => i.itemId !== itemId);
+  } else {
+    newItems = current.items.map((i) =>
+      i.itemId === itemId ? { ...i, quantity: finalQuantity } : i
+    );
+  }
+
+  setInventoryState({ items: newItems });
+  setSavingStatus("Saving…");
+  fetch("/api/game/save-item", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId, quantity: finalQuantity }),
+  }).catch(() => {});
+
+  return true;
 }
 
 // ─── Get collected count for an item ─────────────────────

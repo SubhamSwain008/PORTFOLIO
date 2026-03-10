@@ -117,7 +117,7 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
     const pz = playerPosRef.current.z;
     const time = performance.now() * 0.001;
 
-    let closestDist = COLLECT_RADIUS;
+    let closestDist: number = COLLECT_RADIUS;
     let closestItem: SpawnedItem | null = null;
     const nearModels: SpawnedItem[] = [];
 
@@ -155,7 +155,7 @@ export default function WorldItems({ playerPosRef, realm }: WorldItemsProps) {
       } else {
         // ─── FAR (but visible): show as glowing indicator orb + ring ───
         const phase = i * 2.37 + time * 2.0;
-      const bobY = INVENTORY.INDICATOR_BASE_Y + Math.sin(phase) * INVENTORY.INDICATOR_BOB_AMPLITUDE;
+        const bobY = INVENTORY.INDICATOR_BASE_Y + Math.sin(phase) * INVENTORY.INDICATOR_BOB_AMPLITUDE;
 
         tempObject.position.set(si.position[0], bobY, si.position[2]);
         tempObject.rotation.set(0, 0, 0);
