@@ -7,10 +7,11 @@ import { getGameState, setGameState, useGameStore } from "./useGameStore";
 import { useSearchParams } from "next/navigation";
 import { getSessionState } from "./useSessionStore";
 import { getStaminaState, setStaminaState } from "./useStaminaStore";
+import { getHungerState } from "./useHungerStore";
 import { ENV_PROPS } from "../lib/environment";
 import {
   PLAYER, STAMINA, STAMINA_RECOVERY_RATE, WORLD, GATE, PORTAL,
-  WALK_ANIM, FLASHLIGHT,
+  WALK_ANIM, FLASHLIGHT, HUNGER,
 } from "./settings/settings";
 
 interface PlayerProps {
@@ -222,7 +223,13 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       const staminaState = getStaminaState();
       let currentStamina = staminaState.stamina;
 
-      if (keys.current["shift"] && currentStamina > 0) {
+      // Hunger-based stamina lock: if hunger <= threshold, no stamina
+      const hungerNow = getHungerState().hunger;
+      if (hungerNow <= HUNGER.STAMINA_LOCK_THRESHOLD) {
+        currentStamina = 0;
+        isSprinting = false;
+        setStaminaState({ stamina: 0, isSprinting: false });
+      } else if (keys.current["shift"] && currentStamina > 0) {
         // Sprinting: drain 100 stamina in 20s (5 units/sec)
         isSprinting = true;
         currentStamina = Math.max(0, currentStamina - STAMINA.DRAIN_PER_SECOND * delta);
@@ -270,9 +277,12 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
         velocity.current.set(0, 0, 0);
         isMoving.current = false;
 
-        // Idle refill stamina
+        // Idle refill stamina (only if hunger > threshold)
         const staminaState = getStaminaState();
-        if (staminaState.stamina < STAMINA.MAX) {
+        const idleHunger = getHungerState().hunger;
+        if (idleHunger <= HUNGER.STAMINA_LOCK_THRESHOLD) {
+          setStaminaState({ stamina: 0, isSprinting: false });
+        } else if (staminaState.stamina < STAMINA.MAX) {
           const newStamina = Math.min(STAMINA.MAX, staminaState.stamina + STAMINA_RECOVERY_RATE * delta);
           setStaminaState({ stamina: newStamina, isSprinting: false });
         } else if (staminaState.isSprinting) {

@@ -1,38 +1,78 @@
 import { useEffect } from "react";
 import { getHungerState, setHungerState } from "./useHungerStore";
+import { getHealthState, setHealthState } from "./useHealthStore";
+import { getStaminaState, setStaminaState } from "./useStaminaStore";
 import { getSessionState } from "./useSessionStore";
+import { getGameState, setGameState } from "./useGameStore";
+import { setInventoryState } from "./inventory/inventory";
+import {
+  HUNGER,
+  HUNGER_DRAIN_PER_SECOND,
+  HEALTH,
+} from "./settings/settings";
 
 export default function HungerManager() {
   useEffect(() => {
-    // 15 minutes = 900 seconds
     const intervalTime = 1000;
-    const dropPerSecond = 100 / 900; // ~0.111 per second
 
-    // Local state decay
+    // ─── Local state decay (every second) ───
     const decayInterval = setInterval(() => {
       const session = getSessionState();
       if (session.appPhase !== "game") return;
 
-      const current = getHungerState().hunger;
-      const next = Math.max(0, current - dropPerSecond);
-      setHungerState({ hunger: next });
+      const game = getGameState();
+      if (game.isDead) return;
+
+      // ─── Hunger decay ───
+      const currentHunger = getHungerState().hunger;
+      const nextHunger = Math.max(0, currentHunger - HUNGER_DRAIN_PER_SECOND);
+      setHungerState({ hunger: nextHunger });
+
+      // ─── Stamina lock when hunger ≤ threshold ───
+      if (nextHunger <= HUNGER.STAMINA_LOCK_THRESHOLD) {
+        setStaminaState({ stamina: 0, isSprinting: false });
+      }
+
+      // ─── Health decay when hunger is 0 ───
+      const currentHealth = getHealthState().health;
+      if (nextHunger <= 0 && currentHealth > 0) {
+        const nextHealth = Math.max(0, currentHealth - HEALTH.DRAIN_PER_SECOND);
+        setHealthState({ health: nextHealth });
+
+        // ─── Death check ───
+        if (nextHealth <= 0) {
+          // Defer state mutations to avoid crashing R3F render cycle
+          setTimeout(() => {
+            setGameState({ isDead: true });
+            // Only wipe player inventory items, keep worldItems intact
+            setInventoryState({ items: [] });
+            fetch("/api/game/save-death", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            }).catch(() => {});
+          }, 0);
+        }
+      }
     }, intervalTime);
 
-    // Save to DB every 60 seconds
+    // ─── Save hunger + health to DB every 60 seconds ───
     const dbInterval = setInterval(() => {
       const session = getSessionState();
-      // Only hit db if correctly logged in
       if (session.mode !== "login") return;
 
-      const current = getHungerState().hunger;
+      const game = getGameState();
+      if (game.isDead) return;
+
+      const currentHunger = getHungerState().hunger;
+      const currentHealth = getHealthState().health;
       fetch("/api/game/save-hunger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hunger: current }),
+        body: JSON.stringify({ hunger: currentHunger, health: currentHealth }),
       }).catch((err) => {
-        console.error("Failed to save hunger", err);
+        console.error("Failed to save vitals", err);
       });
-    }, 60000);
+    }, HUNGER.DB_SAVE_INTERVAL);
 
     return () => {
       clearInterval(decayInterval);

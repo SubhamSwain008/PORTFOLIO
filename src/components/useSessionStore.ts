@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { setInventoryState } from "./inventory/inventory";
 import { setHungerState } from "./useHungerStore";
+import { setHealthState } from "./useHealthStore";
 
 // ─── Types ───────────────────────────────────────────────
 export type AppPhase = "loading" | "mode-select" | "login" | "game";
@@ -73,6 +74,10 @@ export async function loadGameData(): Promise<boolean> {
         // Hydrate hunger store
         if (gameData.hunger !== undefined) {
           setHungerState({ hunger: gameData.hunger });
+        }
+        // Hydrate health store
+        if (gameData.health !== undefined) {
+          setHealthState({ health: gameData.health });
         }
         // Store initial position and world
         if (gameData.position) {

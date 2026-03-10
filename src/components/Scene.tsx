@@ -14,6 +14,7 @@ import InventoryHUD from "./inventory/InventoryHUD";
 import SaveIndicator, { setSavingStatus } from "./SaveIndicator";
 import { getSessionState } from "./useSessionStore";
 import { getHungerState } from "./useHungerStore";
+import { getHealthState } from "./useHealthStore";
 import {
   useGameStore,
   getGameState,
@@ -23,7 +24,9 @@ import PositionAutoSave from "./PositionAutoSave";
 import { MiniMap, MiniMapLogic } from "./MiniMap";
 import StaminaBar from "./StaminaBar";
 import HungerBar from "./HungerBar";
+import HealthBar from "./HealthBar";
 import HungerManager from "./HungerManager";
+import DeathOverlay from "./DeathOverlay";
 import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
 import { NIGHT_LIGHTING, CAMERA, TRANSITION } from "./settings/settings";
 
@@ -114,7 +117,7 @@ function XKeyHandler() {
               await fetch("/api/game/save-hunger", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hunger: getHungerState().hunger }),
+                body: JSON.stringify({ hunger: getHungerState().hunger, health: getHealthState().health }),
               });
             } catch (err) {}
           }
@@ -130,7 +133,7 @@ function XKeyHandler() {
               await fetch("/api/game/save-hunger", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hunger: getHungerState().hunger }),
+                body: JSON.stringify({ hunger: getHungerState().hunger, health: getHealthState().health }),
               });
             } catch (err) {}
           }
@@ -327,7 +330,9 @@ export default function Scene() {
       {isExplore && <MiniMap />}
       <StaminaBar />
       <HungerBar />
+      <HealthBar />
       <HungerManager />
+      <DeathOverlay />
     </div>
   );
 }

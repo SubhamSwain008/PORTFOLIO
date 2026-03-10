@@ -9,6 +9,7 @@ import HallInteriorWorld from "./HallInteriorWorld";
 import HallInteriorPlayer from "./HallInteriorPlayer";
 import { getSessionState } from "../../useSessionStore";
 import { getHungerState } from "../../useHungerStore";
+import { getHealthState } from "../../useHealthStore";
 import { HALL_INTERIOR } from "../../settings/settings";
 
 // ─── Interior Camera ─────────────────────────────────────
@@ -243,7 +244,7 @@ export default function HallInteriorScene() {
                     await fetch("/api/game/save-hunger", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ hunger: getHungerState().hunger }),
+                        body: JSON.stringify({ hunger: getHungerState().hunger, health: getHealthState().health }),
                     });
                 } catch (err) {}
             }

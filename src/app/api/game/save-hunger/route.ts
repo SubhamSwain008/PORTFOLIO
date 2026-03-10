@@ -22,21 +22,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    const { hunger } = await req.json();
-    if (typeof hunger !== "number") {
-      return NextResponse.json({ ok: false, error: "hunger required" }, { status: 400 });
-    }
+    const body = await req.json();
+    const { hunger, health } = body;
 
     const { neon } = require("@neondatabase/serverless");
     const sql = neon(process.env.neon_db_direct || process.env.neon_db || "");
 
-    await sql`
-      INSERT INTO "user_game_state" ("userId", "hunger", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
-      VALUES (${userId}, ${hunger}, 0, 1.3, 8, 'night', NOW())
-      ON CONFLICT ("userId") DO UPDATE SET
-        "hunger" = ${hunger},
-        "updatedAt" = NOW()
-    `;
+    // Build dynamic update based on what's provided
+    if (typeof hunger === "number" && typeof health === "number") {
+      await sql`
+        INSERT INTO "user_game_state" ("userId", "hunger", "health", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
+        VALUES (${userId}, ${hunger}, ${health}, 0, 1.3, 8, 'night', NOW())
+        ON CONFLICT ("userId") DO UPDATE SET
+          "hunger" = ${hunger},
+          "health" = ${health},
+          "updatedAt" = NOW()
+      `;
+    } else if (typeof hunger === "number") {
+      await sql`
+        INSERT INTO "user_game_state" ("userId", "hunger", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
+        VALUES (${userId}, ${hunger}, 0, 1.3, 8, 'night', NOW())
+        ON CONFLICT ("userId") DO UPDATE SET
+          "hunger" = ${hunger},
+          "updatedAt" = NOW()
+      `;
+    } else if (typeof health === "number") {
+      await sql`
+        INSERT INTO "user_game_state" ("userId", "health", "positionX", "positionY", "positionZ", "currentWorld", "updatedAt")
+        VALUES (${userId}, ${health}, 0, 1.3, 8, 'night', NOW())
+        ON CONFLICT ("userId") DO UPDATE SET
+          "health" = ${health},
+          "updatedAt" = NOW()
+      `;
+    } else {
+      return NextResponse.json({ ok: false, error: "hunger or health required" }, { status: 400 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

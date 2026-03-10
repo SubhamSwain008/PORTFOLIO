@@ -234,6 +234,22 @@ export default function HallInteriorPlayer({
             }
         }
 
+        // Table proximity check
+        const tablePos = HALL_INTERIOR.TABLE_POS;
+        const distToTable = new THREE.Vector2(
+            groupRef.current.position.x - tablePos[0],
+            groupRef.current.position.z - tablePos[2]
+        ).length();
+
+        const wasNearTable = getGameState().isNearTable;
+        const isNearTable = distToTable < HALL_INTERIOR.TABLE_RADIUS;
+        if (wasNearTable !== isNearTable) {
+            setGameState({ isNearTable: isNearTable });
+            if (!isNearTable) {
+                setGameState({ isEatingUIOpen: false });
+            }
+        }
+
         // Walk animation
         if (isMoving.current) {
             walkTime.current += delta * WALK_ANIM.FREQUENCY;

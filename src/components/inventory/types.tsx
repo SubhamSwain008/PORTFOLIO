@@ -1,6 +1,6 @@
 import { ITEM_SPAWN_CONFIG } from "../settings/settings";
 // ─── Item Categories ─────────────────────────────────────
-export type ItemCategory = "food" | "tool";
+export type ItemCategory = "food" | "tool" | "medicine";
 
 // ─── Item Definition (registry entry) ────────────────────
 export interface InventoryItemDef {
@@ -12,7 +12,8 @@ export interface InventoryItemDef {
   emissive: string;    // glow color
   maxSpawn: number;    // max number that can exist in the world at once
   consumable?: boolean; // Can it be eaten?
-  hungerRestore?: number; // How much it restores
+  hungerRestore?: number; // How much hunger it restores
+  healthRestore?: number; // How much health it restores (medicine)
 }
 
 // ─── Collected item in player inventory ──────────────────
@@ -141,6 +142,41 @@ export const ITEM_REGISTRY: InventoryItemDef[] = [
     color: "#a07040",
     emissive: "#c89060",
     maxSpawn: 3,
+  },
+
+  // ── Medicine ──
+  {
+    id: "health_potion",
+    name: "Health Potion",
+    category: "medicine",
+    description: "A shimmering crimson elixir. Restores 30 health.",
+    color: "#cc2244",
+    emissive: "#ff3355",
+    maxSpawn: 3,
+    consumable: true,
+    healthRestore: 30,
+  },
+  {
+    id: "healing_herb",
+    name: "Healing Herb",
+    category: "medicine",
+    description: "A luminous green herb with restorative properties. Restores 15 health.",
+    color: "#22aa44",
+    emissive: "#44cc66",
+    maxSpawn: 4,
+    consumable: true,
+    healthRestore: 15,
+  },
+  {
+    id: "antidote_vial",
+    name: "Antidote Vial",
+    category: "medicine",
+    description: "A potent restorative brew. Restores 50 health.",
+    color: "#4488cc",
+    emissive: "#66aaee",
+    maxSpawn: 2,
+    consumable: true,
+    healthRestore: 50,
   },
 ];
 
