@@ -10,16 +10,18 @@ import { InstancedTrees, InstancedRocks, InstancedFencePerimeter } from "./Insta
 import WorldItems from "./inventory/WorldItems";
 import InstancedGrass from "./InstancedGrass";
 import { NIGHT_ENV, PORTAL } from "./settings/settings";
+import EnemySystem from "./EnemySystem";
 
 import { useGameStore } from "./useGameStore";
 
 interface WorldProps {
   playerPosRef?: React.MutableRefObject<THREE.Vector3>;
+  playerAngleRef?: React.MutableRefObject<number>;
 }
 
 
 
-export default function World({ playerPosRef }: WorldProps) {
+export default function World({ playerPosRef, playerAngleRef }: WorldProps) {
   const props = ENV_PROPS;
   const grassTexture = useTexture("/assets/grass.png");
   const portalVideo = useVideoTexture("/assets/portal.mp4", {
@@ -71,8 +73,8 @@ export default function World({ playerPosRef }: WorldProps) {
   const texOuter = useMemo(() => {
     const t = grassTexture.clone();
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    // Keep the same ratio as 4 repeats per 60 units -> (400 / 60) * 4 = 26.666
-    t.repeat.set(400 / 15, 400 / 15);
+    // Keep the same ratio as 4 repeats per 60 units -> (1600 / 60) * 4 = 106.666
+    t.repeat.set(1600 / 15, 1600 / 15);
     t.needsUpdate = true;
     return t;
   }, [grassTexture]);
@@ -81,7 +83,7 @@ export default function World({ playerPosRef }: WorldProps) {
     <group>
       {/* Outer ground (extends to camera horizon) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-        <planeGeometry args={[800, 800]} />
+        <planeGeometry args={[1600, 1600]} />
         <meshStandardMaterial
           map={texOuter}
           color="#b8b8b8ff"
@@ -138,6 +140,9 @@ export default function World({ playerPosRef }: WorldProps) {
         <planeGeometry args={[4, 5]} />
         <meshBasicMaterial map={portalVideo} color="#ffffff" toneMapped={false} />
       </mesh>
+
+      {/* ─── Enemy System (dynamic spawning) ─── */}
+      {playerPosRef && playerAngleRef && <EnemySystem playerPosRef={playerPosRef} playerAngleRef={playerAngleRef} />}
 
       {/* ─── Collectible Items ─── */}
       {playerPosRef && <WorldItems playerPosRef={playerPosRef} realm="night" />}

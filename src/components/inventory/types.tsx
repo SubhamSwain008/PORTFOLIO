@@ -14,6 +14,7 @@ export interface InventoryItemDef {
   consumable?: boolean; // Can it be eaten?
   hungerRestore?: number; // How much hunger it restores
   healthRestore?: number; // How much health it restores (medicine)
+  equippable?: boolean; // Can it be equipped (e.g., fire torch)?
 }
 
 // ─── Collected item in player inventory ──────────────────
@@ -133,6 +134,7 @@ export const ITEM_REGISTRY: InventoryItemDef[] = [
     color: "#d08020",
     emissive: "#ff9933",
     maxSpawn: 3,
+    equippable: true,
   },
   {
     id: "ancient_compass",

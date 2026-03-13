@@ -14,10 +14,10 @@ export default function HungerBar() {
     <div
       style={{
         position: "fixed",
-        top: 42,
+        top: 24,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 300,
+        width: 250,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

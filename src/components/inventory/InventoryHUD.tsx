@@ -5,7 +5,8 @@ import { useInventoryStore, nearestItemPrompt, removeItems } from "./inventory";
 import { getItemDef, ITEM_REGISTRY } from "./types";
 import { getHungerState, setHungerState } from "../useHungerStore";
 import { getHealthState, setHealthState } from "../useHealthStore";
-import { HEALTH } from "../settings/settings";
+import { getGameState, setGameState, useGameStore } from "../useGameStore";
+import { HEALTH, FIRE_TORCH } from "../settings/settings";
 
 // ─── Emoji Icons for items (matching the item theme) ─────
 const ITEM_ICONS: Record<string, string> = {
@@ -74,6 +75,20 @@ export default function InventoryHUD() {
         body: JSON.stringify({ hunger: newHunger })
       }).catch(() => {});
     }
+  };
+
+  const handleEquip = (itemId: string) => {
+    const def = getItemDef(itemId);
+    if (!def || !def.equippable) return;
+
+    // Check if torch is already active
+    const gameState = getGameState();
+    if (gameState.fireTorchEquippedAt !== null) return;
+
+    const success = removeItems(itemId, 1);
+    if (!success) return;
+
+    setGameState({ fireTorchEquippedAt: Date.now() });
   };
 
   // Poll the mutable nearestItemPrompt via rAF — zero React re-renders
@@ -245,8 +260,12 @@ export default function InventoryHUD() {
                       onMouseLeave={() => setHoveredItem(null)}
                       onContextMenu={(e) => {
                          e.preventDefault();
-                         handleConsume(def.id);
-                      }}
+                         if (def.equippable) {
+                           handleEquip(def.id);
+                         } else {
+                           handleConsume(def.id);
+                         }
+                       }}
                       style={{
                         position: "relative",
                         background: isHovered
@@ -357,6 +376,11 @@ export default function InventoryHUD() {
                                 [Right Click] Use (+{def.healthRestore} Health)
                              </div>
                           )}
+                          {def.equippable && (
+                             <div style={{ marginTop: 6, fontSize: "11px", color: "#ffaa33", fontWeight: "bold" }}>
+                                [Right Click] Equip
+                             </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -370,3 +394,77 @@ export default function InventoryHUD() {
     </>
   );
 }
+
+// ─── Fire Torch Active Indicator ───
+function FireTorchIndicator() {
+  const fireTorchEquippedAt = useGameStore((s) => s.fireTorchEquippedAt);
+  const [remainingSec, setRemainingSec] = useState(0);
+
+  useEffect(() => {
+    if (fireTorchEquippedAt === null) {
+      setRemainingSec(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - fireTorchEquippedAt) / 1000;
+      const remaining = Math.max(0, FIRE_TORCH.BURN_DURATION - elapsed);
+      setRemainingSec(Math.ceil(remaining));
+      if (remaining <= 0) {
+        setGameState({ fireTorchEquippedAt: null });
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [fireTorchEquippedAt]);
+
+  if (fireTorchEquippedAt === null || remainingSec <= 0) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 1002,
+        pointerEvents: "none",
+        background: "rgba(30, 15, 5, 0.85)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        border: "1px solid rgba(255, 150, 50, 0.5)",
+        borderRadius: "10px",
+        padding: "8px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        boxShadow: "0 0 20px rgba(255, 120, 30, 0.3)",
+      }}
+    >
+      <span style={{ fontSize: "20px" }}>🔥</span>
+      <span
+        style={{
+          color: "#ffcc66",
+          fontSize: "14px",
+          fontWeight: 600,
+          fontFamily: "'Inter', 'Segoe UI', sans-serif",
+          letterSpacing: "1px",
+        }}
+      >
+        Fire Torch
+      </span>
+      <span
+        style={{
+          color: remainingSec <= 10 ? "#ff4444" : "#ffaa33",
+          fontSize: "14px",
+          fontWeight: 700,
+          fontFamily: "'Inter', monospace",
+          minWidth: "30px",
+          textAlign: "center",
+        }}
+      >
+        {remainingSec}s
+      </span>
+    </div>
+  );
+}
+
+export { FireTorchIndicator };

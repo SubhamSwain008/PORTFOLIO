@@ -1,11 +1,69 @@
 "use client";
 
-import { useGameStore } from "./useGameStore";
+import { useGameStore, setGameState } from "./useGameStore";
 import { useSessionStore } from "./useSessionStore";
+import { setHealthState } from "./useHealthStore";
+import { setHungerState } from "./useHungerStore";
+import { setInventoryState } from "./inventory/inventory";
+import { useState } from "react";
 
 export default function DeathOverlay() {
     const isDead = useGameStore(s => s.isDead);
+    const deathCause = useGameStore(s => s.deathCause);
     const appPhase = useSessionStore(s => s.appPhase);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleReloadSave = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Fetch all saves
+            const res = await fetch("/api/game/saves");
+            const data = await res.json();
+            
+            if (data.ok && data.saves.length > 0) {
+                // Get most recent save
+                const latestSave = data.saves[0];
+                
+                // Fetch the complete save data to load it
+                const loadRes = await fetch("/api/game/load-save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ saveId: latestSave.id }),
+                });
+                const loadData = await loadRes.json();
+                
+                if (loadData.ok) {
+                    const save = loadData.save;
+                    setHealthState({ health: save.health });
+                    setHungerState({ hunger: save.hunger });
+                    
+                    let parsedInv = [];
+                    if (typeof save.inventory === "string") {
+                        try { parsedInv = JSON.parse(save.inventory); } catch(e) {}
+                    } else if (Array.isArray(save.inventory)) {
+                        parsedInv = save.inventory;
+                    }
+                    setInventoryState({ items: parsedInv });
+
+                    // Clear death state to resume game
+                    setGameState({ isDead: false });
+
+                    // Authorize and force spawn in hall interior
+                    sessionStorage.setItem("hallEntryAllowed", "true");
+                    window.location.href = "/hall";
+                } else {
+                    setError("Failed to load last save.");
+                }
+            } else {
+                setError("No saves found.");
+            }
+        } catch (err) {
+            setError("Network error loading save.");
+        }
+        setLoading(false);
+    };
 
     if (!isDead || appPhase !== "game") return null;
 
@@ -74,7 +132,9 @@ export default function DeathOverlay() {
                     marginBottom: 8,
                 }}
             >
-                Starvation has claimed your life...
+                {deathCause === "enemy"
+                    ? "An enemy has slain you..."
+                    : "Starvation has claimed your life..."}
             </p>
 
             <p
@@ -88,6 +148,35 @@ export default function DeathOverlay() {
             >
                 All inventory items have been lost.
             </p>
+
+            {/* Reload prompt */}
+            <div
+                style={{
+                    fontFamily: "'Georgia', serif",
+                    fontSize: "1rem",
+                    color: "#aaccff",
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    padding: "10px 30px",
+                    border: "1px solid rgba(50, 150, 255, 0.4)",
+                    borderRadius: 4,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    background: "rgba(10, 30, 60, 0.6)",
+                    boxShadow: "0 0 10px rgba(50, 150, 255, 0.2)",
+                    marginBottom: 20,
+                    opacity: loading ? 0.6 : 1,
+                    transition: "all 0.2s ease",
+                }}
+                onClick={!loading ? handleReloadSave : undefined}
+            >
+                {loading ? "Loading..." : "Reload from Last Save"}
+            </div>
+
+            {error && (
+                <div style={{ color: "#ff6666", marginBottom: 20, fontFamily: "monospace" }}>
+                    {error}
+                </div>
+            )}
 
             {/* Restart prompt */}
             <div

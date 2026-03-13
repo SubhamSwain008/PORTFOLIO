@@ -68,9 +68,16 @@ export function setWorldSettings(world: "night" | "day", partial: Partial<WorldS
 export function applyVolume(world: "night" | "day") {
   if (typeof document === "undefined") return;
   const id = world === "night" ? "night-audio" : "day-audio";
+  const chaseId = world === "night" ? "chase-audio-night" : "chase-audio-day";
+
   const audio = document.getElementById(id) as HTMLAudioElement | null;
   if (audio) {
     audio.volume = state[world].volume / 100;
+  }
+
+  const chaseAudio = document.getElementById(chaseId) as HTMLAudioElement | null;
+  if (chaseAudio) {
+    chaseAudio.volume = state[world].volume / 100;
   }
 }
 

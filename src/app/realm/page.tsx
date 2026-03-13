@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import SaveIndicator from "@/components/SaveIndicator";
@@ -8,11 +8,13 @@ import { useSessionStore, setSessionState, getSessionState, initSession } from "
 import { setInventoryState } from "@/components/inventory/inventory";
 import { setHungerState } from "@/components/useHungerStore";
 import { setHealthState } from "@/components/useHealthStore";
-import { applyVolume } from "@/components/useWorldSettings";
+import { applyVolume, getWorldSettings } from "@/components/useWorldSettings";
 import HungerBar from "@/components/HungerBar";
 import HealthBar from "@/components/HealthBar";
 import HungerManager from "@/components/HungerManager";
 import DeathOverlay from "@/components/DeathOverlay";
+import { useEnemyStore, getEnemyState } from "@/components/useEnemyStore";
+import { crossfade } from "@/components/audioUtils";
 
 const DayScene = dynamic(() => import("@/components/day/DayScene"), {
     ssr: false,
@@ -22,8 +24,10 @@ const DayScene = dynamic(() => import("@/components/day/DayScene"), {
 export default function RealmPage() {
     const appPhase = useSessionStore((s) => s.appPhase);
     const musicEnabled = useSessionStore((s) => s.musicEnabled);
+    const isPlayerChased = useEnemyStore((s) => s.isPlayerChased);
     const [loading, setLoading] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
+    const crossfadeCleanupRef = useRef<() => void>(null);
 
     // Apply saved volume on mount
     useEffect(() => {
@@ -84,6 +88,33 @@ export default function RealmPage() {
 
         return () => clearTimeout(minTimer);
     }, [appPhase]);
+
+    // ─── Audio Toggle Logic ───
+    useEffect(() => {
+        if (appPhase !== "game") return;
+
+        const dayAudio = document.getElementById("day-audio") as HTMLAudioElement | null;
+        const chaseAudioDay = document.getElementById("chase-audio-day") as HTMLAudioElement | null;
+
+        if (!dayAudio || !chaseAudioDay) return;
+
+        const targetVol = getWorldSettings().day.volume / 100;
+
+        if (!musicEnabled) {
+            if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
+            dayAudio.pause();
+            chaseAudioDay.pause();
+            return;
+        }
+
+        if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
+
+        if (isPlayerChased) {
+            crossfadeCleanupRef.current = crossfade(dayAudio, chaseAudioDay, 2000, targetVol);
+        } else {
+            crossfadeCleanupRef.current = crossfade(chaseAudioDay, dayAudio, 2000, targetVol);
+        }
+    }, [musicEnabled, isPlayerChased, appPhase]);
 
     if (appPhase !== "game") {
         return (
@@ -233,7 +264,13 @@ export default function RealmPage() {
                 id="day-audio"
                 src="https://storage.googleapis.com/udio-artifacts-c33fe3ba-3ffe-471f-92c8-5dfef90b3ea3/samples/526b313d6583430dbdc9c70235942355/1/The%2520Untitled.mp3"
                 loop
-                autoPlay={musicEnabled}
+                style={{ display: "none" }}
+            />
+            {/* Hidden Chase Audio */}
+            <audio
+                id="chase-audio-day"
+                src="/assets/chase.mp3"
+                loop
                 style={{ display: "none" }}
             />
             <DayInteractionUnlocker />
@@ -246,7 +283,8 @@ function DayInteractionUnlocker() {
     useEffect(() => {
         const unlock = () => {
             if (!getSessionState().musicEnabled) return;
-            const audio = document.getElementById("day-audio") as HTMLAudioElement | null;
+            const audioId = getEnemyState().isPlayerChased ? "chase-audio-day" : "day-audio";
+            const audio = document.getElementById(audioId) as HTMLAudioElement | null;
             if (audio) {
                 audio.play().catch(() => {});
             }

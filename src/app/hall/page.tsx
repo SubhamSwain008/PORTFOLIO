@@ -8,6 +8,8 @@ import CookingHUD from "@/components/interior/hall/CookingHUD";
 import CookingPrompt from "@/components/interior/hall/CookingPrompt";
 import EatingHUD from "@/components/interior/hall/EatingHUD";
 import EatingPrompt from "@/components/interior/hall/EatingPrompt";
+import SavePrompt from "@/components/interior/hall/SavePrompt";
+import SaveHUD from "@/components/interior/hall/SaveHUD";
 import HungerBar from "@/components/HungerBar";
 import HealthBar from "@/components/HealthBar";
 import StaminaBar from "@/components/StaminaBar";
@@ -329,6 +331,8 @@ export default function HallPage() {
             <CookingHUD />
             <EatingPrompt />
             <EatingHUD />
+            <SavePrompt />
+            <SaveHUD />
 
             {/* Survival System */}
             <HungerManager />

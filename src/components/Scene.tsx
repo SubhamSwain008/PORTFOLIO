@@ -11,6 +11,7 @@ import PortalPrompt from "./PortalPrompt";
 import GatePrompt from "./GatePrompt";
 import BoundaryDialogue from "./BoundaryDialogue";
 import InventoryHUD from "./inventory/InventoryHUD";
+import { FireTorchIndicator } from "./inventory/InventoryHUD";
 import SaveIndicator, { setSavingStatus } from "./SaveIndicator";
 import { getSessionState } from "./useSessionStore";
 import { getHungerState } from "./useHungerStore";
@@ -231,7 +232,7 @@ export default function Scene() {
     gameMode === "explore" || gameMode === "transitioning-in" || gameMode === "transitioning-out";
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: NIGHT_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
+    <div onContextMenu={e => e.preventDefault()} style={{ width: "100vw", height: "100vh", background: NIGHT_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -287,7 +288,7 @@ export default function Scene() {
               />
 
               {/* World */}
-              <World playerPosRef={playerPosRef} />
+              <World playerPosRef={playerPosRef} playerAngleRef={playerAngleRef} />
 
               {/* Entrance prompt */}
               <EntrancePrompt />
@@ -319,6 +320,7 @@ export default function Scene() {
 
       {/* ─── Inventory HUD (HTML overlay) ─── */}
       {isExplore && <InventoryHUD />}
+      {isExplore && <FireTorchIndicator />}
 
       {/* ─── Position auto-save (login mode only) ─── */}
       <PositionAutoSave playerPosRef={playerPosRef} world="night" />

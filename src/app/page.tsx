@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import {
   useSessionStore,
   initSession,
   getSessionState,
 } from "@/components/useSessionStore";
+import { useEnemyStore, getEnemyState } from "@/components/useEnemyStore";
 import ModeSelect from "@/components/ModeSelect";
 import LoginScreen from "@/components/LoginScreen";
 import SettingsOverlay from "@/components/SettingsOverlay";
-import { applyVolume } from "@/components/useWorldSettings";
+import { applyVolume, getWorldSettings } from "@/components/useWorldSettings";
+import { crossfade } from "@/components/audioUtils";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
   ssr: false,
@@ -22,8 +24,10 @@ export default function Home() {
   const musicEnabled = useSessionStore((s) => s.musicEnabled);
   const gameDataLoaded = useSessionStore((s) => s.gameDataLoaded);
   const mode = useSessionStore((s) => s.mode);
+  const isPlayerChased = useEnemyStore((s) => s.isPlayerChased);
   const [loading, setLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const crossfadeCleanupRef = useRef<() => void>(null);
 
   // Init session on mount
   useEffect(() => {
@@ -48,6 +52,33 @@ export default function Home() {
     }, 2500);
     return () => clearTimeout(minTimer);
   }, [appPhase, gameDataLoaded, mode]);
+
+  // ─── Audio Toggle Logic ───
+  useEffect(() => {
+    if (appPhase !== "game") return;
+
+    const nightAudio = document.getElementById("night-audio") as HTMLAudioElement | null;
+    const chaseAudio = document.getElementById("chase-audio-night") as HTMLAudioElement | null;
+
+    if (!nightAudio || !chaseAudio) return;
+
+    const targetVol = getWorldSettings().night.volume / 100;
+
+    if (!musicEnabled) {
+      if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
+      nightAudio.pause();
+      chaseAudio.pause();
+      return;
+    }
+
+    if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
+
+    if (isPlayerChased) {
+      crossfadeCleanupRef.current = crossfade(nightAudio, chaseAudio, 2000, targetVol);
+    } else {
+      crossfadeCleanupRef.current = crossfade(chaseAudio, nightAudio, 2000, targetVol);
+    }
+  }, [musicEnabled, isPlayerChased, appPhase]);
 
   // ─── Mode Select ───
   if (appPhase === "loading") {
@@ -197,7 +228,13 @@ export default function Home() {
         id="night-audio"
         src="https://storage.googleapis.com/udio-artifacts-c33fe3ba-3ffe-471f-92c8-5dfef90b3ea3/samples/7a1bf4535db641808d8fea5d005186fe/1/The%2520Untitled.mp3"
         loop
-        autoPlay={musicEnabled}
+        style={{ display: "none" }}
+      />
+      {/* Hidden Chase Audio */}
+      <audio
+        id="chase-audio-night"
+        src="/assets/chase.mp3"
+        loop
         style={{ display: "none" }}
       />
       <InteractionUnlocker />
@@ -210,9 +247,8 @@ function InteractionUnlocker() {
   useEffect(() => {
     const unlock = () => {
       if (!getSessionState().musicEnabled) return;
-      const audio = document.getElementById(
-        "night-audio"
-      ) as HTMLAudioElement | null;
+      const audioId = getEnemyState().isPlayerChased ? "chase-audio-night" : "night-audio";
+      const audio = document.getElementById(audioId) as HTMLAudioElement | null;
       if (audio) {
         audio.play().catch(() => { });
       }

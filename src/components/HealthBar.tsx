@@ -20,10 +20,10 @@ export default function HealthBar() {
     <div
       style={{
         position: "fixed",
-        top: 62,
+        top: 24,
         left: "50%",
-        transform: "translateX(-50%)",
-        width: 300,
+        transform: "translateX(calc(-50% + 280px))",
+        width: 250,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

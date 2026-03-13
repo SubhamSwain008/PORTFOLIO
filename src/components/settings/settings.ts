@@ -60,7 +60,7 @@ export const HUNGER = {
   /** Seconds for hunger to drain from 100 → 0 */
   DRAIN_DURATION: 900, // 15 minutes
   /** Below this %, stamina is locked to 0 */
-  STAMINA_LOCK_THRESHOLD: 30,
+  STAMINA_LOCK_THRESHOLD: 5,
   /** DB save interval in milliseconds */
   DB_SAVE_INTERVAL: 60_000,
 } as const;
@@ -573,4 +573,145 @@ export const MINIMAP = {
   SIZE: 100,
   /** Distance² at which hall arrow starts to fade */
   HALL_FADE_DISTANCE_SQ: 25,
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  ENEMIES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/** Enemy type identifier — matches model component names */
+export type EnemyType = "hellhound" | "shadow_spider" | "floating_ghost" | "shadow_wraith" | "skull_specter";
+
+export interface EnemyTypeConfig {
+  /** Display name */
+  name: string;
+  /** Hit points — higher HP = slower speed */
+  hp: number;
+  /** Damage dealt per attack */
+  damage: number;
+  /** Speed as a multiplier of PLAYER.WALK_SPEED (1.0x–1.5x) */
+  speedMultiplier: number;
+  /** Seconds between consecutive attacks */
+  attackCooldown: number;
+  /** Visual scale of the model */
+  scale: number;
+  /** Y offset so model sits on the ground properly */
+  yOffset: number;
+  /** Max instances of this type that can be alive at once */
+  maxCount: number;
+  /** If true, this enemy freezes when the flashlight cone hits it */
+  freezeOnFlashlight: boolean;
+}
+
+export const ENEMY_TYPES: Record<EnemyType, EnemyTypeConfig> = {
+  hellhound: {
+    name: "Hellhound",
+    hp: 60,
+    damage: 12,
+    speedMultiplier: 1.25,
+    attackCooldown: 1.5,
+    scale: 1.0,
+    yOffset: 0,
+    maxCount: 3,
+    freezeOnFlashlight: false,
+  },
+  shadow_spider: {
+    name: "Shadow Spider",
+    hp: 40,
+    damage: 8,
+    speedMultiplier: 1.4,
+    attackCooldown: 1.0,
+    scale: 0.8,
+    yOffset: 0,
+    maxCount: 3,
+    freezeOnFlashlight: false,
+  },
+  floating_ghost: {
+    name: "Banshee Ghost",
+    hp: 80,
+    damage: 15,
+    speedMultiplier: 1.1,
+    attackCooldown: 2.0,
+    scale: 0.9,
+    yOffset: 0,
+    maxCount: 2,
+    freezeOnFlashlight: false,
+  },
+  shadow_wraith: {
+    name: "Shadow Wraith",
+    hp: 120,
+    damage: 20,
+    speedMultiplier: 1.0,
+    attackCooldown: 2.5,
+    scale: 1.5,
+    yOffset: 0,
+    maxCount: 2,
+    freezeOnFlashlight: true,
+  },
+  skull_specter: {
+    name: "Skull Specter",
+    hp: 30,
+    damage: 6,
+    speedMultiplier: 1.5,
+    attackCooldown: 0.8,
+    scale: 0.7,
+    yOffset: 0.5,
+    maxCount: 4,
+    freezeOnFlashlight: false,
+  },
+};
+
+export const ENEMIES = {
+  /** Distance from player within which spawn points activate */
+  ACTIVATION_RADIUS: 25,
+  /** Distance beyond which active enemies despawn */
+  DESPAWN_RADIUS: 35,
+  /** Maximum simultaneously active enemies (keeps encounters rare) */
+  MAX_ACTIVE_ENEMIES: 2,
+  /** Minimum seconds before a spawn point can re-trigger */
+  SPAWN_COOLDOWN: 30,
+  /** Enemy body collision radius for tree avoidance */
+  COLLISION_RADIUS: 0.4,
+  /** Distance at which enemy can land an attack on the player */
+  ATTACK_RANGE: 1.8,
+  /** Enemies cannot enter the fence safe zone (same as WORLD.FENCE_DISTANCE) */
+  FENCE_SAFE_ZONE: 36,
+
+  // ── Spawn point generation ──
+  /** Number of random spawn points to generate each session */
+  SPAWN_POINT_COUNT: 20,
+  /** Minimum distance from world center for spawn points (must be outside fence) */
+  SPAWN_MIN_DISTANCE: 45,
+  /** Maximum distance from world center for spawn points */
+  SPAWN_MAX_DISTANCE: 350,
+  /** Minimum distance between two spawn points */
+  SPAWN_MIN_SEPARATION: 30,
+  /** RNG seed for spawn point generation (changes each page load for randomness) */
+  SPAWN_USE_RANDOM_SEED: true,
+
+  // ── Damage flash ──
+  /** Duration of red screen flash when hit (seconds) */
+  HIT_FLASH_DURATION: 0.3,
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  SHADOW WRAITH — Flashlight Freeze
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const SHADOW_WRAITH = {
+  /** Half-angle of the flashlight cone check (radians) — enemies within this cone are frozen */
+  FLASHLIGHT_CONE_ANGLE: 0.4,
+  /** Max distance from player for flashlight freeze to apply */
+  FLASHLIGHT_MAX_DISTANCE: 25,
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ┃  FIRE TORCH — Equippable Repel
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const FIRE_TORCH = {
+  /** Repel radius — enemies cannot come closer than this distance when torch is active */
+  REPEL_DISTANCE: 5,
+  /** Duration the fire torch stays active after equipping (seconds) */
+  BURN_DURATION: 60,
 } as const;

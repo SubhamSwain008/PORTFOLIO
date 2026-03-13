@@ -91,6 +91,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const gateCrossingDir = useRef<THREE.Vector3>(new THREE.Vector3());
 
   const gameMode = useGameStore((s) => s.gameMode);
+  const fireTorchEquippedAt = useGameStore((s) => s.fireTorchEquippedAt);
+  const hasTorch = fireTorchEquippedAt !== null;
 
   useFrame((stateContext, delta) => {
     if (!groupRef.current) return;
@@ -436,7 +438,12 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     const armSwing = walkCycle * WALK_ANIM.ARM_SWING;
 
     if (leftArmRef.current) {
-      leftArmRef.current.rotation.x = armSwing;
+      if (hasTorch) {
+        // Hold left arm forward slightly
+        leftArmRef.current.rotation.x = -0.5 + (walkCycle * 0.05);
+      } else {
+        leftArmRef.current.rotation.x = armSwing;
+      }
     }
     if (rightArmRef.current) {
       rightArmRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT; // less swing, holding flashlight
@@ -723,6 +730,34 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
               <boxGeometry args={[0.08, 0.06, 0.06]} />
               <primitive object={skinMat} attach="material" />
             </mesh>
+            
+            {/* ─── Fire Torch (Conditional) ─── */}
+            {hasTorch && (
+              <group position={[0, -0.65, 0.1]} rotation={[-Math.PI / 2 + 0.2, 0, 0]}>
+                {/* Handle */}
+                <mesh castShadow position={[0, 0, 0]}>
+                  <cylinderGeometry args={[0.02, 0.02, 0.4, 8]} />
+                  <meshStandardMaterial color="#4a3a28" roughness={0.9} />
+                </mesh>
+                {/* Hand grip extension */}
+                <mesh castShadow position={[0, -0.1, 0]}>
+                  <cylinderGeometry args={[0.025, 0.025, 0.1, 8]} />
+                  <meshStandardMaterial color="#2a1a08" roughness={0.9} />
+                </mesh>
+                {/* Flame */}
+                <mesh position={[0, 0.22, 0]}>
+                  <sphereGeometry args={[0.08, 6, 6]} />
+                  <meshStandardMaterial color="#ffaa33" emissive="#ff8800" emissiveIntensity={3} />
+                </mesh>
+                {/* Flame core */}
+                <mesh position={[0, 0.22, 0]}>
+                  <sphereGeometry args={[0.04, 4, 4]} />
+                  <meshBasicMaterial color="#ffffff" />
+                </mesh>
+                {/* Dynamic Light */}
+                <pointLight position={[0, 0.25, 0]} color="#ffaa33" distance={12} intensity={2} decay={1.5} />
+              </group>
+            )}
           </group>
 
           {/* ════════════ RIGHT ARM (holding flashlight) ════════════ */}

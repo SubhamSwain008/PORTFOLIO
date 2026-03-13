@@ -282,7 +282,7 @@ export default function DayScene() {
     }, []);
 
     return (
-        <div style={{ width: "100vw", height: "100vh", background: DAY_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
+        <div onContextMenu={e => e.preventDefault()} style={{ width: "100vw", height: "100vh", background: DAY_LIGHTING.BACKGROUND_COLOR, filter: `brightness(${brightnessFilter})`, transition: "filter 0.3s ease" }}>
             <Canvas
                 shadows
                 dpr={[1, 2]}

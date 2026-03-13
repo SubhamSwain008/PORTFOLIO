@@ -249,6 +249,22 @@ export default function HallInteriorPlayer({
                 setGameState({ isEatingUIOpen: false });
             }
         }
+        
+        // Bed proximity check
+        const sleepBedPos = HALL_INTERIOR.BED_POS;
+        const distToBed = new THREE.Vector2(
+            groupRef.current.position.x - sleepBedPos[0],
+            groupRef.current.position.z - sleepBedPos[2]
+        ).length();
+
+        const wasNearBed = getGameState().isNearBed;
+        const isNearBed = distToBed < 6.0; // Trigger from further away since the bed is huge
+        if (wasNearBed !== isNearBed) {
+            setGameState({ isNearBed: isNearBed });
+            if (!isNearBed) {
+                setGameState({ isSaveUIOpen: false });
+            }
+        }
 
         // Walk animation
         if (isMoving.current) {

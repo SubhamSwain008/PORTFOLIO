@@ -23,11 +23,18 @@ export interface GameState {
     isCookingUIOpen: boolean;
     isNearTable: boolean;
     isEatingUIOpen: boolean;
+    // ─── Save / Bed State ───
+    isNearBed: boolean;
+    isSaveUIOpen: boolean;
+    // ─── Daytime specific state ───
     // ─── Daytime specific state ───
     isNearDayPortal: boolean;
     isNearDayGate: boolean;
     isDayCrossingGate: boolean;
     isDead: boolean;
+    deathCause: "starvation" | "enemy" | null;
+    /** Timestamp (Date.now()) when fire torch was equipped, null when inactive */
+    fireTorchEquippedAt: number | null;
 }
 
 // ─── Singleton store ─────────────────────────────────────
@@ -47,10 +54,14 @@ let state: GameState = {
     isCookingUIOpen: false,
     isNearTable: false,
     isEatingUIOpen: false,
+    isNearBed: false,
+    isSaveUIOpen: false,
     isNearDayPortal: false,
     isNearDayGate: false,
     isDayCrossingGate: false,
     isDead: false,
+    deathCause: null,
+    fireTorchEquippedAt: null,
 };
 
 type Listener = () => void;

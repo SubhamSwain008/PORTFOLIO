@@ -67,7 +67,8 @@ export default function DayWorld({ playerPosRef }: DayWorldProps) {
     const texOuter = useMemo(() => {
         const t = grassTexture.clone();
         t.wrapS = t.wrapT = THREE.RepeatWrapping;
-        t.repeat.set(400 / 15, 400 / 15);
+        // Keep the same ratio as 4 repeats per 60 units -> (1600 / 60) * 4 = 106.666
+        t.repeat.set(1600 / 15, 1600 / 15);
         t.needsUpdate = true;
         return t;
     }, [grassTexture]);
@@ -76,7 +77,7 @@ export default function DayWorld({ playerPosRef }: DayWorldProps) {
         <group>
             {/* Outer ground */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-                <planeGeometry args={[1100, 1100]} />
+                <planeGeometry args={[1600, 1600]} />
                 <meshStandardMaterial
                     map={texOuter}
                     color="#d0d8c0"

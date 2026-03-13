@@ -43,7 +43,7 @@ export default function HungerManager() {
         if (nextHealth <= 0) {
           // Defer state mutations to avoid crashing R3F render cycle
           setTimeout(() => {
-            setGameState({ isDead: true });
+            setGameState({ isDead: true, deathCause: "starvation" });
             // Only wipe player inventory items, keep worldItems intact
             setInventoryState({ items: [] });
             fetch("/api/game/save-death", {

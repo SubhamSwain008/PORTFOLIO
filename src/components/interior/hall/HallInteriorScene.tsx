@@ -259,6 +259,7 @@ export default function HallInteriorScene() {
 
     return (
         <div
+            onContextMenu={e => e.preventDefault()}
             style={{
                 width: "100vw",
                 height: "100vh",
