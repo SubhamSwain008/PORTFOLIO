@@ -12,6 +12,7 @@ import ModeSelect from "@/components/ModeSelect";
 import LoginScreen from "@/components/LoginScreen";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import { applyVolume, getWorldSettings } from "@/components/useWorldSettings";
+import { useGameStore } from "@/components/useGameStore";
 import { crossfade } from "@/components/audioUtils";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -25,6 +26,7 @@ export default function Home() {
   const gameDataLoaded = useSessionStore((s) => s.gameDataLoaded);
   const mode = useSessionStore((s) => s.mode);
   const isPlayerChased = useEnemyStore((s) => s.isPlayerChased);
+  const isDead = useGameStore((s) => s.isDead);
   const [loading, setLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const crossfadeCleanupRef = useRef<() => void>(null);
@@ -64,7 +66,7 @@ export default function Home() {
 
     const targetVol = getWorldSettings().night.volume / 100;
 
-    if (!musicEnabled) {
+    if (!musicEnabled || isDead) {
       if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
       nightAudio.pause();
       chaseAudio.pause();
@@ -78,7 +80,7 @@ export default function Home() {
     } else {
       crossfadeCleanupRef.current = crossfade(chaseAudio, nightAudio, 2000, targetVol);
     }
-  }, [musicEnabled, isPlayerChased, appPhase]);
+  }, [musicEnabled, isPlayerChased, isDead, appPhase]);
 
   // ─── Mode Select ───
   if (appPhase === "loading") {

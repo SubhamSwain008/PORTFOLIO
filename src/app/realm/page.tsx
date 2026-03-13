@@ -13,6 +13,7 @@ import HungerBar from "@/components/HungerBar";
 import HealthBar from "@/components/HealthBar";
 import HungerManager from "@/components/HungerManager";
 import DeathOverlay from "@/components/DeathOverlay";
+import { useGameStore } from "@/components/useGameStore";
 import { useEnemyStore, getEnemyState } from "@/components/useEnemyStore";
 import { crossfade } from "@/components/audioUtils";
 
@@ -25,6 +26,7 @@ export default function RealmPage() {
     const appPhase = useSessionStore((s) => s.appPhase);
     const musicEnabled = useSessionStore((s) => s.musicEnabled);
     const isPlayerChased = useEnemyStore((s) => s.isPlayerChased);
+    const isDead = useGameStore((s) => s.isDead);
     const [loading, setLoading] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
     const crossfadeCleanupRef = useRef<() => void>(null);
@@ -100,7 +102,7 @@ export default function RealmPage() {
 
         const targetVol = getWorldSettings().day.volume / 100;
 
-        if (!musicEnabled) {
+        if (!musicEnabled || isDead) {
             if (crossfadeCleanupRef.current) crossfadeCleanupRef.current();
             dayAudio.pause();
             chaseAudioDay.pause();
@@ -114,7 +116,7 @@ export default function RealmPage() {
         } else {
             crossfadeCleanupRef.current = crossfade(chaseAudioDay, dayAudio, 2000, targetVol);
         }
-    }, [musicEnabled, isPlayerChased, appPhase]);
+    }, [musicEnabled, isPlayerChased, isDead, appPhase]);
 
     if (appPhase !== "game") {
         return (
