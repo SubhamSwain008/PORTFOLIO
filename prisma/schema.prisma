@@ -11,8 +11,7 @@ generator client {
 model User {
   id          Int       @id @default(autoincrement())
   email       String    @unique
-  otp         String?
-  otp_expires DateTime? @db.Timestamptz
+  password    String
   created_at  DateTime  @default(now()) @db.Timestamptz
 
   saves       GameSave[]

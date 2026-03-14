@@ -28,6 +28,7 @@ import HungerBar from "./HungerBar";
 import HealthBar from "./HealthBar";
 import HungerManager from "./HungerManager";
 import DeathOverlay from "./DeathOverlay";
+import MobileControls from "./MobileControls";
 import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
 import { NIGHT_LIGHTING, CAMERA, TRANSITION } from "./settings/settings";
 
@@ -335,6 +336,7 @@ export default function Scene() {
       <HealthBar />
       <HungerManager />
       <DeathOverlay />
+      <MobileControls />
     </div>
   );
 }

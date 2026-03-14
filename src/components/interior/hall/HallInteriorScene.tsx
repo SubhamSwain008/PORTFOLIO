@@ -11,6 +11,7 @@ import { getSessionState } from "../../useSessionStore";
 import { getHungerState } from "../../useHungerStore";
 import { getHealthState } from "../../useHealthStore";
 import { HALL_INTERIOR } from "../../settings/settings";
+import MobileControls from "../../MobileControls";
 
 // ─── Interior Camera ─────────────────────────────────────
 function InteriorCamera({
@@ -296,6 +297,7 @@ export default function HallInteriorScene() {
                     <ExitPrompt isNearExit={isNearExit} />
                 </Suspense>
             </Canvas>
+            <MobileControls />
         </div>
     );
 }

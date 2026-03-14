@@ -16,6 +16,7 @@ import StaminaBar from "../StaminaBar";
 import { getSessionState } from "../useSessionStore";
 import { getHungerState } from "../useHungerStore";
 import { useWorldSettings, getBrightnessFilter } from "../useWorldSettings";
+import MobileControls from "../MobileControls";
 import { DAY_LIGHTING, CAMERA, TRANSITION, GATE, PORTAL } from "../settings/settings";
 
 // ─── Daytime Fog ───
@@ -353,6 +354,7 @@ export default function DayScene() {
             {/* ─── HUD Overlay ─── */}
             <MiniMap />
             <StaminaBar />
+            <MobileControls />
         </div>
     );
 }

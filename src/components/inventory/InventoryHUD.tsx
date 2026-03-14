@@ -266,6 +266,14 @@ export default function InventoryHUD() {
                            handleConsume(def.id);
                          }
                        }}
+                       onClick={() => {
+                         // Fallback for touch users since context menu is tricky
+                         if (def.equippable) {
+                           handleEquip(def.id);
+                         } else {
+                           handleConsume(def.id);
+                         }
+                       }}
                       style={{
                         position: "relative",
                         background: isHovered
@@ -368,17 +376,17 @@ export default function InventoryHUD() {
                           </div>
                           {def.consumable && def.hungerRestore && (
                              <div style={{ marginTop: 6, fontSize: "11px", color: "#66ff66", fontWeight: "bold" }}>
-                                [Right Click] Consume (+{def.hungerRestore} Hunger)
+                                [Tap/Right Click] Consume (+{def.hungerRestore} Hunger)
                              </div>
                           )}
                           {def.consumable && def.healthRestore && (
                              <div style={{ marginTop: 6, fontSize: "11px", color: "#ff6666", fontWeight: "bold" }}>
-                                [Right Click] Use (+{def.healthRestore} Health)
+                                [Tap/Right Click] Use (+{def.healthRestore} Health)
                              </div>
                           )}
                           {def.equippable && (
                              <div style={{ marginTop: 6, fontSize: "11px", color: "#ffaa33", fontWeight: "bold" }}>
-                                [Right Click] Equip
+                                [Tap/Right Click] Equip
                              </div>
                           )}
                         </div>

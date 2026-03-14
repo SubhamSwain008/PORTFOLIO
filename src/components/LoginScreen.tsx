@@ -4,50 +4,27 @@ import { useState } from "react";
 import { setSessionState, loadGameData, getSessionState } from "./useSessionStore";
 
 export default function LoginScreen() {
-  const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSendOTP = async () => {
+  const handleLogin = async () => {
     if (!email || !email.includes("@")) {
       setError("Please enter a valid email");
       return;
     }
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setStep("otp");
-      } else {
-        setError(data.error || "Failed to send OTP");
-      }
-    } catch {
-      setError("Network error");
-    }
-    setLoading(false);
-  };
-
-  const handleVerifyOTP = async () => {
-    const code = otp.join("");
-    if (code.length !== 6) {
-      setError("Enter all 6 digits");
+    if (!password) {
+      setError("Please enter a password");
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: code }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -75,35 +52,12 @@ export default function LoginScreen() {
         // Now signal that data is ready — loading screen can dismiss
         setSessionState({ gameDataLoaded: true });
       } else {
-        setError(data.error || "Verification failed");
+        setError(data.error || "Login failed");
       }
     } catch {
       setError("Network error");
     }
     setLoading(false);
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) value = value.slice(-1);
-    if (value && !/^\d$/.test(value)) return;
-    const next = [...otp];
-    next[index] = value;
-    setOtp(next);
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-    if (e.key === "Enter") {
-      handleVerifyOTP();
-    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -179,7 +133,7 @@ export default function LoginScreen() {
           textShadow: "0 0 20px rgba(154, 106, 255, 0.3)",
         }}
       >
-        {step === "email" ? "Enter Your Email" : "Verification Code"}
+        Login / Register
       </h1>
       <p
         style={{
@@ -190,149 +144,63 @@ export default function LoginScreen() {
           marginBottom: 36,
         }}
       >
-        {step === "email"
-          ? "We'll send you a one-time code"
-          : `Code sent to ${email}`}
+        Enter your email and password
       </p>
 
       {/* Form */}
-      <div style={{ width: 340, maxWidth: "90vw" }}>
-        {step === "email" ? (
-          <>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendOTP()}
-              placeholder="your@email.com"
-              style={inputStyle}
-              onFocus={(e) =>
-                (e.currentTarget.style.borderColor =
-                  "rgba(154, 106, 255, 0.5)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor =
-                  "rgba(154, 106, 255, 0.25)")
-              }
-              autoFocus
-            />
-            <button
-              onClick={handleSendOTP}
-              disabled={loading}
-              style={{
-                width: "100%",
-                marginTop: 16,
-                padding: "13px 0",
-                background: loading
-                  ? "rgba(154, 106, 255, 0.2)"
-                  : "linear-gradient(135deg, #6a3a9a, #9a6aff)",
-                border: "none",
-                borderRadius: 10,
-                color: "#fff",
-                fontFamily: "'Georgia', serif",
-                fontSize: "0.95rem",
-                letterSpacing: "0.15em",
-                cursor: loading ? "wait" : "pointer",
-                transition: "all 0.3s",
-                boxShadow: loading
-                  ? "none"
-                  : "0 4px 20px rgba(154, 106, 255, 0.3)",
-              }}
-            >
-              {loading ? "Sending..." : "Send Code"}
-            </button>
-          </>
-        ) : (
-          <>
-            {/* OTP inputs */}
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                justifyContent: "center",
-                marginBottom: 20,
-              }}
-            >
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  id={`otp-${i}`}
-                  type="text"
-                  inputMode="numeric"
-                  value={digit}
-                  onChange={(e) => handleOtpChange(i, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  maxLength={1}
-                  autoFocus={i === 0}
-                  style={{
-                    ...inputStyle,
-                    width: 48,
-                    height: 56,
-                    textAlign: "center",
-                    fontSize: "1.4rem",
-                    padding: 0,
-                    letterSpacing: 0,
-                  }}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor =
-                      "rgba(154, 106, 255, 0.5)")
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor =
-                      "rgba(154, 106, 255, 0.25)")
-                  }
-                />
-              ))}
-            </div>
-            <button
-              onClick={handleVerifyOTP}
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "13px 0",
-                background: loading
-                  ? "rgba(154, 106, 255, 0.2)"
-                  : "linear-gradient(135deg, #6a3a9a, #9a6aff)",
-                border: "none",
-                borderRadius: 10,
-                color: "#fff",
-                fontFamily: "'Georgia', serif",
-                fontSize: "0.95rem",
-                letterSpacing: "0.15em",
-                cursor: loading ? "wait" : "pointer",
-                transition: "all 0.3s",
-                boxShadow: loading
-                  ? "none"
-                  : "0 4px 20px rgba(154, 106, 255, 0.3)",
-              }}
-            >
-              {loading ? "Verifying..." : "Verify"}
-            </button>
-            <button
-              onClick={() => {
-                setStep("email");
-                setOtp(["", "", "", "", "", ""]);
-                setError("");
-              }}
-              style={{
-                width: "100%",
-                marginTop: 10,
-                padding: "10px 0",
-                background: "none",
-                border: "1px solid rgba(154, 106, 255, 0.15)",
-                borderRadius: 10,
-                color: "#9a8a7a",
-                fontFamily: "'Georgia', serif",
-                fontSize: "0.8rem",
-                letterSpacing: "0.1em",
-                cursor: "pointer",
-                transition: "all 0.3s",
-              }}
-            >
-              Resend Code
-            </button>
-          </>
-        )}
+      <div style={{ width: 340, maxWidth: "90vw", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com"
+          style={inputStyle}
+          onFocus={(e) =>
+            (e.currentTarget.style.borderColor = "rgba(154, 106, 255, 0.5)")
+          }
+          onBlur={(e) =>
+            (e.currentTarget.style.borderColor = "rgba(154, 106, 255, 0.25)")
+          }
+          autoFocus
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+          placeholder="Password"
+          style={inputStyle}
+          onFocus={(e) =>
+            (e.currentTarget.style.borderColor = "rgba(154, 106, 255, 0.5)")
+          }
+          onBlur={(e) =>
+            (e.currentTarget.style.borderColor = "rgba(154, 106, 255, 0.25)")
+          }
+        />
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "13px 0",
+            background: loading
+              ? "rgba(154, 106, 255, 0.2)"
+              : "linear-gradient(135deg, #6a3a9a, #9a6aff)",
+            border: "none",
+            borderRadius: 10,
+            color: "#fff",
+            fontFamily: "'Georgia', serif",
+            fontSize: "0.95rem",
+            letterSpacing: "0.15em",
+            cursor: loading ? "wait" : "pointer",
+            transition: "all 0.3s",
+            boxShadow: loading
+              ? "none"
+              : "0 4px 20px rgba(154, 106, 255, 0.3)",
+          }}
+        >
+          {loading ? "Authenticating..." : "Login"}
+        </button>
       </div>
 
       {/* Error */}
