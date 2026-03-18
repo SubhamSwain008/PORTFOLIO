@@ -220,7 +220,7 @@ export default function EnemySystem({ playerPosRef, playerAngleRef }: EnemySyste
     if (!playerPos) return;
 
     const gameState = getGameState();
-    if (gameState.isDead || gameState.gameMode !== "explore") return;
+    if (gameState.isDead || gameState.gameMode !== "explore" || gameState.isPaused) return;
 
     const now = Date.now();
     let enemies = [...activeEnemiesRef.current];

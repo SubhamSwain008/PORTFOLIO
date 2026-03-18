@@ -29,6 +29,7 @@ import HealthBar from "./HealthBar";
 import HungerManager from "./HungerManager";
 import DeathOverlay from "./DeathOverlay";
 import MobileControls from "./MobileControls";
+import TutorialOverlay, { TutorialButton } from "./TutorialOverlay";
 import { useWorldSettings, getBrightnessFilter } from "./useWorldSettings";
 import { NIGHT_LIGHTING, CAMERA, TRANSITION } from "./settings/settings";
 
@@ -337,6 +338,8 @@ export default function Scene() {
       <HungerManager />
       <DeathOverlay />
       <MobileControls />
+      <TutorialOverlay />
+      <TutorialButton />
     </div>
   );
 }

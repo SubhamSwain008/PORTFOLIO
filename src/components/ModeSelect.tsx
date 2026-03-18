@@ -5,12 +5,6 @@ import { setSessionState } from "./useSessionStore";
 export default function ModeSelect() {
   const modes = [
     {
-      key: "portfolio" as const,
-      title: "Portfolio",
-      desc: "Explore the world freely",
-      icon: "🏰",
-    },
-    {
       key: "demo" as const,
       title: "Demo",
       desc: "Quick exploration mode",

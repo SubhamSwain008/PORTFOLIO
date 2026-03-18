@@ -91,7 +91,7 @@ export default function LoginScreen() {
       {/* Back button */}
       <button
         onClick={() =>
-          setSessionState({ appPhase: "mode-select", mode: "portfolio" })
+          setSessionState({ appPhase: "mode-select", mode: "demo" })
         }
         style={{
           position: "absolute",

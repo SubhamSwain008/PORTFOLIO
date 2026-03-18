@@ -49,11 +49,43 @@ const hairMat = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
+const backpackMat = new THREE.MeshStandardMaterial({
+  color: "#4a5d23",
+  roughness: 0.9,
+  metalness: 0.1,
+});
+
+const strapMat = new THREE.MeshStandardMaterial({
+  color: "#2a2a2a",
+  roughness: 0.8,
+});
+
+const buttonMat = new THREE.MeshStandardMaterial({
+  color: "#111111",
+  roughness: 0.5,
+});
+
+const kneepadMat = new THREE.MeshStandardMaterial({
+  color: "#1a1820",
+  roughness: 0.8,
+});
+
+const watchMat = new THREE.MeshStandardMaterial({
+  color: "#111111",
+  metalness: 0.6,
+  roughness: 0.4,
+});
+
+const sweatbandMat = new THREE.MeshStandardMaterial({
+  color: "#8b0000",
+  roughness: 0.8,
+});
+
 export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const velocity = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
-  const currentAngle = useRef(0);
+  const currentAngle = useRef(Math.PI);
   const walkTime = useRef(0);
   const isMoving = useRef(false);
 
@@ -70,6 +102,8 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
   const rightArmRef = useRef<THREE.Group>(null!);
   const leftLegRef = useRef<THREE.Group>(null!);
   const rightLegRef = useRef<THREE.Group>(null!);
+  const leftKneeRef = useRef<THREE.Group>(null!);
+  const rightKneeRef = useRef<THREE.Group>(null!);
   const flashlightGroupRef = useRef<THREE.Group>(null!);
 
   const SPEED = PLAYER.WALK_SPEED;
@@ -98,6 +132,12 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
     if (!groupRef.current) return;
 
     const state = getGameState();
+
+    // ─── Pause: freeze everything while tutorial is open ───
+    if (state.isPaused) {
+      positionRef.current.copy(groupRef.current.position);
+      return;
+    }
 
     // ─── Lock movement during transitions ───
     if (
@@ -166,6 +206,14 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       const legSwing = walkCycle * WALK_ANIM.LEG_SWING;
       if (leftLegRef.current) leftLegRef.current.rotation.x = -legSwing;
       if (rightLegRef.current) rightLegRef.current.rotation.x = legSwing;
+
+      // Knee bending during crossing
+      if (leftKneeRef.current) {
+        leftKneeRef.current.rotation.x = leftLegRef.current.rotation.x < 0 ? 0 : leftLegRef.current.rotation.x;
+      }
+      if (rightKneeRef.current) {
+        rightKneeRef.current.rotation.x = rightLegRef.current.rotation.x < 0 ? 0 : rightLegRef.current.rotation.x;
+      }
       if (flashlightGroupRef.current) flashlightGroupRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT + FLASHLIGHT.RESTING_TILT;
 
       // Flashlight target + flicker during crossing
@@ -459,6 +507,18 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
       rightLegRef.current.rotation.x = legSwing;
     }
 
+    // ─── Knee Bending ───
+    // Bend knee (positive rotation) when the leg is swinging forward
+    if (leftKneeRef.current && leftLegRef.current) {
+      // Only bend when the leg swings backward from the body's perspective (which is when leg rotation > 0)
+      // Actually, when walking, the leading leg is straighter and the trailing leg bends to lift.
+      // So if leg is moving BACK (rotation > 0), knee bends.
+      leftKneeRef.current.rotation.x = leftLegRef.current.rotation.x > 0 ? leftLegRef.current.rotation.x * 1.5 : 0;
+    }
+    if (rightKneeRef.current && rightLegRef.current) {
+      rightKneeRef.current.rotation.x = rightLegRef.current.rotation.x > 0 ? rightLegRef.current.rotation.x * 1.5 : 0;
+    }
+
     // ─── Flashlight sway ───
     if (flashlightGroupRef.current) {
       flashlightGroupRef.current.rotation.x = -armSwing * WALK_ANIM.ARM_SWING_RIGHT + FLASHLIGHT.RESTING_TILT;
@@ -610,9 +670,72 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
             <meshStandardMaterial color="#b8a060" roughness={0.3} metalness={0.7} />
           </mesh>
 
+          {/* BackPack */}
+          <mesh castShadow position={[0, 0.15, -0.22]}>
+            <boxGeometry args={[0.38, 0.45, 0.15]} />
+            <primitive object={backpackMat} attach="material" />
+          </mesh>
+          {/* Backpack pouch */}
+          <mesh castShadow position={[0, 0.1, -0.31]}>
+            <boxGeometry args={[0.26, 0.25, 0.08]} />
+            <primitive object={backpackMat} attach="material" />
+          </mesh>
+          {/* Backpack bedroll/mat on top */}
+          <mesh castShadow position={[0, 0.42, -0.22]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.08, 0.08, 0.36, 8]} />
+            <meshStandardMaterial color="#3a3a3a" roughness={0.9} />
+          </mesh>
+          {/* Straps over shoulders */}
+          <mesh castShadow position={[-0.15, 0.3, -0.15]}>
+            <boxGeometry args={[0.06, 0.2, 0.25]} />
+            <primitive object={strapMat} attach="material" />
+          </mesh>
+          <mesh castShadow position={[0.15, 0.3, -0.15]}>
+            <boxGeometry args={[0.06, 0.2, 0.25]} />
+            <primitive object={strapMat} attach="material" />
+          </mesh>
+          {/* Straps front */}
+          <mesh castShadow position={[-0.15, 0.15, 0.15]}>
+            <boxGeometry args={[0.06, 0.35, 0.02]} />
+            <primitive object={strapMat} attach="material" />
+          </mesh>
+          <mesh castShadow position={[0.15, 0.15, 0.15]}>
+            <boxGeometry args={[0.06, 0.35, 0.02]} />
+            <primitive object={strapMat} attach="material" />
+          </mesh>
+
+          {/* Shirt Buttons */}
+          <mesh castShadow position={[0, 0.25, 0.145]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.01, 8]} />
+            <primitive object={buttonMat} attach="material" />
+          </mesh>
+          <mesh castShadow position={[0, 0.15, 0.145]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.01, 8]} />
+            <primitive object={buttonMat} attach="material" />
+          </mesh>
+          <mesh castShadow position={[0, 0.05, 0.145]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.01, 8]} />
+            <primitive object={buttonMat} attach="material" />
+          </mesh>
+
+          {/* Chest Pocket */}
+          <mesh castShadow position={[0.12, 0.18, 0.145]}>
+            <boxGeometry args={[0.08, 0.08, 0.01]} />
+            <primitive object={shirtMat} attach="material" />
+          </mesh>
+
           {/* ════════════ HIPS ════════════ */}
           <mesh castShadow position={[0, -0.32, 0]}>
             <boxGeometry args={[0.42, 0.15, 0.24]} />
+            <primitive object={pantsMat} attach="material" />
+          </mesh>
+          {/* Side pockets */}
+          <mesh castShadow position={[-0.22, -0.32, 0]}>
+            <boxGeometry args={[0.02, 0.12, 0.12]} />
+            <primitive object={pantsMat} attach="material" />
+          </mesh>
+          <mesh castShadow position={[0.22, -0.32, 0]}>
+            <boxGeometry args={[0.02, 0.12, 0.12]} />
             <primitive object={pantsMat} attach="material" />
           </mesh>
 
@@ -632,6 +755,11 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
             <mesh castShadow position={[0, -0.02, 0.02]}>
               <boxGeometry args={[0.22, 0.08, 0.22]} />
               <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Sweatband */}
+            <mesh castShadow position={[0, 0.13, 0]}>
+              <boxGeometry args={[0.27, 0.04, 0.27]} />
+              <primitive object={sweatbandMat} attach="material" />
             </mesh>
             {/* Hair top */}
             <mesh castShadow position={[0, 0.2, -0.01]}>
@@ -710,6 +838,11 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
               <boxGeometry args={[0.13, 0.3, 0.13]} />
               <primitive object={shirtMat} attach="material" />
             </mesh>
+            {/* Rolled sleeve rim left */}
+            <mesh castShadow position={[0, -0.29, 0]}>
+              <boxGeometry args={[0.14, 0.04, 0.14]} />
+              <primitive object={shirtMat} attach="material" />
+            </mesh>
             {/* Elbow joint */}
             <mesh castShadow position={[0, -0.3, 0]}>
               <sphereGeometry args={[0.06, 6, 6]} />
@@ -719,6 +852,16 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
             <mesh castShadow position={[0, -0.43, 0]}>
               <boxGeometry args={[0.11, 0.24, 0.11]} />
               <primitive object={skinMat} attach="material" />
+            </mesh>
+            {/* Watch / Wristband */}
+            <mesh castShadow position={[0, -0.52, 0]}>
+              <boxGeometry args={[0.115, 0.04, 0.115]} />
+              <primitive object={watchMat} attach="material" />
+            </mesh>
+            {/* Watch screen */}
+            <mesh castShadow position={[0, -0.52, 0.06]}>
+              <boxGeometry args={[0.04, 0.04, 0.01]} />
+              <meshStandardMaterial color="#00ffcc" emissive="#00ffcc" emissiveIntensity={0.5} />
             </mesh>
             {/* Hand */}
             <mesh castShadow position={[0, -0.58, 0]}>
@@ -730,7 +873,7 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
               <boxGeometry args={[0.08, 0.06, 0.06]} />
               <primitive object={skinMat} attach="material" />
             </mesh>
-            
+
             {/* ─── Fire Torch (Conditional) ─── */}
             {hasTorch && (
               <group position={[0, -0.65, 0.1]} rotation={[-Math.PI / 2 + 0.2, 0, 0]}>
@@ -765,6 +908,11 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
             {/* Upper arm */}
             <mesh castShadow position={[0, -0.16, 0]}>
               <boxGeometry args={[0.13, 0.3, 0.13]} />
+              <primitive object={shirtMat} attach="material" />
+            </mesh>
+            {/* Rolled sleeve rim right */}
+            <mesh castShadow position={[0, -0.29, 0]}>
+              <boxGeometry args={[0.14, 0.04, 0.14]} />
               <primitive object={shirtMat} attach="material" />
             </mesh>
             {/* Elbow joint */}
@@ -815,26 +963,40 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
               <sphereGeometry args={[0.075, 6, 6]} />
               <primitive object={pantsMat} attach="material" />
             </mesh>
-            {/* Shin */}
-            <mesh castShadow position={[0, -0.56, 0]}>
-              <boxGeometry args={[0.16, 0.34, 0.16]} />
-              <primitive object={pantsMat} attach="material" />
+            {/* Knee pad left */}
+            <mesh castShadow position={[0, -0.36, 0.06]}>
+              <boxGeometry args={[0.12, 0.12, 0.06]} />
+              <primitive object={kneepadMat} attach="material" />
             </mesh>
-            {/* Ankle */}
-            <mesh castShadow position={[0, -0.73, 0]}>
-              <sphereGeometry args={[0.07, 6, 6]} />
-              <primitive object={pantsMat} attach="material" />
-            </mesh>
-            {/* Shoe */}
-            <mesh castShadow position={[0, -0.82, 0.04]}>
-              <boxGeometry args={[0.16, 0.09, 0.26]} />
-              <primitive object={shoeMat} attach="material" />
-            </mesh>
-            {/* Shoe sole */}
-            <mesh castShadow position={[0, -0.88, 0.04]}>
-              <boxGeometry args={[0.17, 0.025, 0.28]} />
-              <meshStandardMaterial color="#111115" roughness={0.95} />
-            </mesh>
+
+            {/* Lower Leg Pivot (Knee) */}
+            <group ref={leftKneeRef} position={[0, -0.36, 0]}>
+              {/* Shin */}
+              <mesh castShadow position={[0, -0.20, 0]}>
+                <boxGeometry args={[0.16, 0.34, 0.16]} />
+                <primitive object={pantsMat} attach="material" />
+              </mesh>
+              {/* Ankle */}
+              <mesh castShadow position={[0, -0.37, 0]}>
+                <sphereGeometry args={[0.07, 6, 6]} />
+                <primitive object={pantsMat} attach="material" />
+              </mesh>
+              {/* Boot tongue / laces area left */}
+              <mesh castShadow position={[0, -0.41, 0.1]}>
+                <boxGeometry args={[0.1, 0.04, 0.14]} />
+                <meshStandardMaterial color="#222" roughness={0.9} />
+              </mesh>
+              {/* Shoe */}
+              <mesh castShadow position={[0, -0.46, 0.04]}>
+                <boxGeometry args={[0.16, 0.09, 0.26]} />
+                <primitive object={shoeMat} attach="material" />
+              </mesh>
+              {/* Shoe sole */}
+              <mesh castShadow position={[0, -0.52, 0.04]}>
+                <boxGeometry args={[0.17, 0.025, 0.28]} />
+                <meshStandardMaterial color="#111115" roughness={0.95} />
+              </mesh>
+            </group>
           </group>
 
           {/* ════════════ RIGHT LEG ════════════ */}
@@ -849,26 +1011,40 @@ export default function Player({ positionRef, keys, angleRef }: PlayerProps) {
               <sphereGeometry args={[0.075, 6, 6]} />
               <primitive object={pantsMat} attach="material" />
             </mesh>
-            {/* Shin */}
-            <mesh castShadow position={[0, -0.56, 0]}>
-              <boxGeometry args={[0.16, 0.34, 0.16]} />
-              <primitive object={pantsMat} attach="material" />
+            {/* Knee pad right */}
+            <mesh castShadow position={[0, -0.36, 0.06]}>
+              <boxGeometry args={[0.12, 0.12, 0.06]} />
+              <primitive object={kneepadMat} attach="material" />
             </mesh>
-            {/* Ankle */}
-            <mesh castShadow position={[0, -0.73, 0]}>
-              <sphereGeometry args={[0.07, 6, 6]} />
-              <primitive object={pantsMat} attach="material" />
-            </mesh>
-            {/* Shoe */}
-            <mesh castShadow position={[0, -0.82, 0.04]}>
-              <boxGeometry args={[0.16, 0.09, 0.26]} />
-              <primitive object={shoeMat} attach="material" />
-            </mesh>
-            {/* Shoe sole */}
-            <mesh castShadow position={[0, -0.88, 0.04]}>
-              <boxGeometry args={[0.17, 0.025, 0.28]} />
-              <meshStandardMaterial color="#111115" roughness={0.95} />
-            </mesh>
+
+            {/* Lower Leg Pivot (Knee) */}
+            <group ref={rightKneeRef} position={[0, -0.36, 0]}>
+              {/* Shin */}
+              <mesh castShadow position={[0, -0.20, 0]}>
+                <boxGeometry args={[0.16, 0.34, 0.16]} />
+                <primitive object={pantsMat} attach="material" />
+              </mesh>
+              {/* Ankle */}
+              <mesh castShadow position={[0, -0.37, 0]}>
+                <sphereGeometry args={[0.07, 6, 6]} />
+                <primitive object={pantsMat} attach="material" />
+              </mesh>
+              {/* Boot tongue / laces area right */}
+              <mesh castShadow position={[0, -0.41, 0.1]}>
+                <boxGeometry args={[0.1, 0.04, 0.14]} />
+                <meshStandardMaterial color="#222" roughness={0.9} />
+              </mesh>
+              {/* Shoe */}
+              <mesh castShadow position={[0, -0.46, 0.04]}>
+                <boxGeometry args={[0.16, 0.09, 0.26]} />
+                <primitive object={shoeMat} attach="material" />
+              </mesh>
+              {/* Shoe sole */}
+              <mesh castShadow position={[0, -0.52, 0.04]}>
+                <boxGeometry args={[0.17, 0.025, 0.28]} />
+                <meshStandardMaterial color="#111115" roughness={0.95} />
+              </mesh>
+            </group>
           </group>
 
         </group>

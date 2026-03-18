@@ -12,7 +12,7 @@ import ModeSelect from "@/components/ModeSelect";
 import LoginScreen from "@/components/LoginScreen";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import { applyVolume, getWorldSettings } from "@/components/useWorldSettings";
-import { useGameStore } from "@/components/useGameStore";
+import { useGameStore, setGameState } from "@/components/useGameStore";
 import { crossfade } from "@/components/audioUtils";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -54,6 +54,19 @@ export default function Home() {
     }, 2500);
     return () => clearTimeout(minTimer);
   }, [appPhase, gameDataLoaded, mode]);
+
+  // ─── First-time tutorial trigger ───
+  useEffect(() => {
+    if (appPhase !== "game" || !gameDataLoaded) return;
+    const session = getSessionState();
+    if (session.firstTimePlayed) {
+      // Small delay to let the loading screen clear
+      const timer = setTimeout(() => {
+        setGameState({ isTutorialOpen: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [appPhase, gameDataLoaded]);
 
   // ─── Audio Toggle Logic ───
   useEffect(() => {

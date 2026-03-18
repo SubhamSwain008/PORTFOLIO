@@ -27,7 +27,6 @@ export interface GameState {
     isNearBed: boolean;
     isSaveUIOpen: boolean;
     // ─── Daytime specific state ───
-    // ─── Daytime specific state ───
     isNearDayPortal: boolean;
     isNearDayGate: boolean;
     isDayCrossingGate: boolean;
@@ -35,10 +34,13 @@ export interface GameState {
     deathCause: "starvation" | "enemy" | null;
     /** Timestamp (Date.now()) when fire torch was equipped, null when inactive */
     fireTorchEquippedAt: number | null;
+    // ─── Tutorial / Pause ───
+    isTutorialOpen: boolean;
+    isPaused: boolean;
 }
 
 // ─── Singleton store ─────────────────────────────────────
-let state: GameState = {
+const DEFAULT_GAME_STATE: GameState = {
     gameMode: "explore",
     isNearEntrance: false,
     isNearExit: false,
@@ -62,7 +64,11 @@ let state: GameState = {
     isDead: false,
     deathCause: null,
     fireTorchEquippedAt: null,
+    isTutorialOpen: false,
+    isPaused: false,
 };
+
+let state: GameState = { ...DEFAULT_GAME_STATE };
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -77,6 +83,12 @@ export function getGameState(): GameState {
 
 export function setGameState(partial: Partial<GameState>) {
     state = { ...state, ...partial };
+    emitChange();
+}
+
+/** Fully reset game state to defaults — call when switching modes */
+export function resetGameState() {
+    state = { ...DEFAULT_GAME_STATE };
     emitChange();
 }
 

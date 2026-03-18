@@ -51,7 +51,7 @@ export default function DayPlayer({ positionRef, keys, angleRef }: DayPlayerProp
     const groupRef = useRef<THREE.Group>(null!);
     const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
-    const currentAngle = useRef(0);
+    const currentAngle = useRef(Math.PI);
     const walkTime = useRef(0);
     const isMoving = useRef(false);
 
@@ -79,6 +79,12 @@ export default function DayPlayer({ positionRef, keys, angleRef }: DayPlayerProp
         if (!groupRef.current) return;
 
         const state = getGameState();
+
+        // ─── Pause: freeze everything while tutorial is open ───
+        if (state.isPaused) {
+            positionRef.current.copy(groupRef.current.position);
+            return;
+        }
 
         // ─── Auto-walk through gate ───
         if (state.isDayCrossingGate && gateCrossingTarget.current) {

@@ -11,6 +11,7 @@ import {
   setWorldSettings,
   applyVolume,
 } from "./useWorldSettings";
+import { resetGameState } from "./useGameStore";
 
 export default function SettingsOverlay() {
   const appPhase = useSessionStore((s) => s.appPhase);
@@ -81,20 +82,13 @@ export default function SettingsOverlay() {
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    setSessionState({
-      appPhase: "mode-select",
-      mode: "portfolio",
-      userEmail: null,
-    });
-    setOpen(false);
+    // Hard refresh to clear all 3D assets and state properly
+    window.location.href = "/";
   };
 
   const handleSwitchMode = () => {
-    setSessionState({
-      appPhase: "mode-select",
-      mode: "portfolio",
-    });
-    setOpen(false);
+    // Hard refresh to clear all 3D assets and state properly
+    window.location.href = "/";
   };
 
   const menuItemStyle: React.CSSProperties = {

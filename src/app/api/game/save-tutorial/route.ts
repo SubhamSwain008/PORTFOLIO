@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function GET() {
+export async function POST() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("session_token")?.value;
@@ -24,37 +24,16 @@ export async function GET() {
       return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
     }
 
-    const userId = user.id;
+    // Mark tutorial as completed
+    await sql`
+      UPDATE "user_game_state"
+      SET "firstTimePlayed" = false, "updatedAt" = NOW()
+      WHERE "userId" = ${user.id}
+    `;
 
-    // Get or create game state
-    let rows = await sql`SELECT * FROM "user_game_state" WHERE "userId" = ${userId}`;
-
-    if (rows.length === 0) {
-      // Create default game state
-      await sql`
-        INSERT INTO "user_game_state" ("userId", "inventory", "hunger", "health", "positionX", "positionY", "positionZ", "currentWorld", "firstTimePlayed", "updatedAt")
-        VALUES (${userId}, '[]'::jsonb, 100, 100, 0, 1.3, 8, 'night', true, NOW())
-      `;
-      rows = await sql`SELECT * FROM "user_game_state" WHERE "userId" = ${userId}`;
-    }
-
-    const state = rows[0];
-
-    return NextResponse.json({
-      ok: true,
-      inventory: state.inventory || [],
-      hunger: state.hunger ?? 100,
-      health: state.health ?? 100,
-      position: {
-        x: state.positionX,
-        y: state.positionY,
-        z: state.positionZ,
-      },
-      currentWorld: state.currentWorld || "night",
-      firstTimePlayed: state.firstTimePlayed ?? true,
-    });
+    return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    console.error("game/load error:", err);
+    console.error("game/save-tutorial error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }

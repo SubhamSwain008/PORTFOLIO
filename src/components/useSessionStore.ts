@@ -7,7 +7,7 @@ import { setHealthState } from "./useHealthStore";
 
 // ─── Types ───────────────────────────────────────────────
 export type AppPhase = "loading" | "mode-select" | "login" | "game";
-export type AppMode = "portfolio" | "demo" | "login";
+export type AppMode = "demo" | "login";
 
 export interface SessionState {
   appPhase: AppPhase;
@@ -17,17 +17,19 @@ export interface SessionState {
   gameDataLoaded: boolean;
   initialPosition: { x: number; y: number; z: number } | null;
   currentWorld: string;
+  firstTimePlayed: boolean;
 }
 
 // ─── Singleton store ─────────────────────────────────────
 let state: SessionState = {
   appPhase: "loading",
-  mode: "portfolio",
+  mode: "demo",
   userEmail: null,
   musicEnabled: true,
   gameDataLoaded: false,
   initialPosition: null,
   currentWorld: "night",
+  firstTimePlayed: true,
 };
 
 type Listener = () => void;
@@ -84,6 +86,7 @@ export async function loadGameData(): Promise<boolean> {
           setSessionState({
             initialPosition: gameData.position,
             currentWorld: gameData.currentWorld || "night",
+            firstTimePlayed: gameData.firstTimePlayed ?? false,
           });
         }
         return true;

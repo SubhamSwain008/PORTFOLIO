@@ -238,7 +238,6 @@ export const INVENTORY = {
   DAY_SPAWN_MULTIPLIER: 0.5,
 
 
-  ///kkkkkkk
   /** Pickup distance — how close player must be to collect */
   COLLECT_RADIUS: 3.5,
   /** Distance² to show full 3D models (beyond this → indicator only) */

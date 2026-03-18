@@ -21,7 +21,7 @@ export default function HungerManager() {
       if (session.appPhase !== "game") return;
 
       const game = getGameState();
-      if (game.isDead) return;
+      if (game.isDead || game.isPaused) return;
 
       // ─── Hunger decay ───
       const currentHunger = getHungerState().hunger;
