@@ -6,6 +6,7 @@ import { setHealthState } from "./useHealthStore";
 import { setHungerState } from "./useHungerStore";
 import { setInventoryState } from "./inventory/inventory";
 import { useState } from "react";
+import { netFetch, NetFetchError } from "@/lib/netFetch";
 
 export default function DeathOverlay() {
     const isDead = useGameStore(s => s.isDead);
@@ -18,19 +19,18 @@ export default function DeathOverlay() {
         setLoading(true);
         setError(null);
         try {
-            // Fetch all saves
-            const res = await fetch("/api/game/saves");
+            const res = await netFetch("/api/game/saves", { timeoutMs: 15000, retries: 2 });
             const data = await res.json();
-            
+
             if (data.ok && data.saves.length > 0) {
-                // Get most recent save
                 const latestSave = data.saves[0];
-                
-                // Fetch the complete save data to load it
-                const loadRes = await fetch("/api/game/load-save", {
+
+                const loadRes = await netFetch("/api/game/load-save", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ saveId: latestSave.id }),
+                    timeoutMs: 20000,
+                    retries: 2,
                 });
                 const loadData = await loadRes.json();
                 
@@ -60,7 +60,11 @@ export default function DeathOverlay() {
                 setError("No saves found.");
             }
         } catch (err) {
-            setError("Network error loading save.");
+            if (err instanceof NetFetchError && err.kind === "timeout") {
+                setError("Server is slow to respond. Please try again.");
+            } else {
+                setError("Network error loading save.");
+            }
         }
         setLoading(false);
     };

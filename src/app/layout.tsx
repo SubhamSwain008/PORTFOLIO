@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import NetworkMonitor from "@/components/NetworkMonitor";
 
 export const metadata: Metadata = {
   title: "the game",
@@ -13,7 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Global top-left network quality monitor */}
+        <NetworkMonitor />
+      </body>
     </html>
   );
 }

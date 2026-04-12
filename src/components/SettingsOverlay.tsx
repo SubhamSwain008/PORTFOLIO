@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   useSessionStore,
   setSessionState,
@@ -11,13 +12,16 @@ import {
   setWorldSettings,
   applyVolume,
 } from "./useWorldSettings";
-import { resetGameState } from "./useGameStore";
+import { resetGameState, setGameState } from "./useGameStore";
+
+const ModelViewer = dynamic(() => import("./ModelViewer"), { ssr: false });
 
 export default function SettingsOverlay() {
   const appPhase = useSessionStore((s) => s.appPhase);
   const userEmail = useSessionStore((s) => s.userEmail);
   const musicEnabled = useSessionStore((s) => s.musicEnabled);
   const [open, setOpen] = useState(false);
+  const [modelViewerOpen, setModelViewerOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Per-world settings
@@ -56,7 +60,8 @@ export default function SettingsOverlay() {
 
   if (appPhase !== "game") {
     const onRealmPage = typeof document !== "undefined" && document.getElementById("day-audio");
-    if (!onRealmPage) return null;
+    const onHallPage = typeof window !== "undefined" && window.location.pathname === "/hall";
+    if (!onRealmPage && !onHallPage) return null;
   }
 
   const handleMusicToggle = () => {
@@ -81,8 +86,16 @@ export default function SettingsOverlay() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    // Hard refresh to clear all 3D assets and state properly
+    // Bounded timeout so slow internet doesn't trap user on the button.
+    // Worst case: cookie is cleared by the server later; we already navigate.
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 6000);
+      await fetch("/api/auth/logout", { method: "POST", signal: ctrl.signal });
+      clearTimeout(t);
+    } catch {
+      /* proceed regardless — hard refresh clears client state */
+    }
     window.location.href = "/";
   };
 
@@ -333,6 +346,35 @@ export default function SettingsOverlay() {
             }}
           />
 
+          {/* Bestiary / Model Viewer */}
+          <button
+            onClick={() => {
+              setModelViewerOpen(true);
+              setGameState({ isPaused: true });
+              setOpen(false);
+            }}
+            style={menuItemStyle}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background =
+                "rgba(154, 106, 255, 0.1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "none")
+            }
+          >
+            <span>👁️</span>
+            <span>Bestiary</span>
+          </button>
+
+          {/* Divider */}
+          <div
+            style={{
+              height: 1,
+              background: "rgba(154, 106, 255, 0.1)",
+              margin: "4px 8px",
+            }}
+          />
+
           {/* Switch mode */}
           <button
             onClick={handleSwitchMode}
@@ -407,6 +449,15 @@ export default function SettingsOverlay() {
           box-shadow: 0 0 6px rgba(154,106,255,0.5);
         }
       `}</style>
+
+      {/* Model Viewer Overlay */}
+      <ModelViewer
+        isOpen={modelViewerOpen}
+        onClose={() => {
+          setModelViewerOpen(false);
+          setGameState({ isPaused: false });
+        }}
+      />
     </div>
   );
 }

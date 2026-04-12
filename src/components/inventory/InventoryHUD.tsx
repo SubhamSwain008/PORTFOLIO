@@ -7,6 +7,7 @@ import { getHungerState, setHungerState } from "../useHungerStore";
 import { getHealthState, setHealthState } from "../useHealthStore";
 import { getGameState, setGameState, useGameStore } from "../useGameStore";
 import { HEALTH, FIRE_TORCH } from "../settings/settings";
+import { netPostBackground } from "@/lib/netFetch";
 
 // ─── Emoji Icons for items (matching the item theme) ─────
 const ITEM_ICONS: Record<string, string> = {
@@ -56,11 +57,7 @@ export default function InventoryHUD() {
       const newHealth = Math.min(HEALTH.MAX, currentHealth + def.healthRestore);
       setHealthState({ health: newHealth });
 
-      fetch("/api/game/save-hunger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ health: newHealth })
-      }).catch(() => {});
+      netPostBackground("/api/game/save-hunger", { health: newHealth });
     }
 
     // Food → restore hunger
@@ -69,11 +66,7 @@ export default function InventoryHUD() {
       const newHunger = Math.min(100, currentHunger + def.hungerRestore);
       setHungerState({ hunger: newHunger });
 
-      fetch("/api/game/save-hunger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hunger: newHunger })
-      }).catch(() => {});
+      netPostBackground("/api/game/save-hunger", { hunger: newHunger });
     }
   };
 

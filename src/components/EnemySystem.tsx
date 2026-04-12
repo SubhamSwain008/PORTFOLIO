@@ -21,6 +21,7 @@ import {
 import { getHealthState, setHealthState } from "./useHealthStore";
 import { getGameState, setGameState } from "./useGameStore";
 import { setInventoryState } from "./inventory/inventory";
+import { netPostBackground } from "@/lib/netFetch";
 import { ENV_PROPS } from "../lib/environment";
 import {
   ENEMIES,
@@ -409,10 +410,8 @@ export default function EnemySystem({ playerPosRef, playerAngleRef }: EnemySyste
             setTimeout(() => {
               setGameState({ isDead: true, deathCause: "enemy" });
               setInventoryState({ items: [] });
-              fetch("/api/game/save-death", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              }).catch(() => {});
+              // Critical save — retry aggressively so death is persisted
+              netPostBackground("/api/game/save-death", {}, { retries: 4, timeoutMs: 15000 });
             }, 0);
           }
         }

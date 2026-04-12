@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { HALL_INTERIOR, PLAYER, WALK_ANIM } from "../../settings/settings";
 import { setGameState, getGameState } from "../../useGameStore";
+import PlayerBodyMesh from "../../PlayerBodyMesh";
 
 interface HallInteriorPlayerProps {
     positionRef: React.MutableRefObject<THREE.Vector3>;
@@ -12,35 +13,6 @@ interface HallInteriorPlayerProps {
     angleRef: React.MutableRefObject<number>;
     onNearExit: (near: boolean) => void;
 }
-
-// Shared materials
-const skinMat = new THREE.MeshStandardMaterial({
-    color: "#c8a88a",
-    roughness: 0.7,
-    metalness: 0.05,
-});
-const shirtMat = new THREE.MeshStandardMaterial({
-    color: "#3d3852",
-    emissive: "#0e0c12",
-    emissiveIntensity: 0.15,
-    roughness: 0.75,
-    metalness: 0.1,
-});
-const pantsMat = new THREE.MeshStandardMaterial({
-    color: "#2a2535",
-    roughness: 0.85,
-    metalness: 0.08,
-});
-const shoeMat = new THREE.MeshStandardMaterial({
-    color: "#1a1a1f",
-    roughness: 0.9,
-    metalness: 0.15,
-});
-const hairMat = new THREE.MeshStandardMaterial({
-    color: "#1c1820",
-    roughness: 0.95,
-    metalness: 0.0,
-});
 
 export default function HallInteriorPlayer({
     positionRef,
@@ -62,6 +34,8 @@ export default function HallInteriorPlayer({
     const rightArmRef = useRef<THREE.Group>(null!);
     const leftLegRef = useRef<THREE.Group>(null!);
     const rightLegRef = useRef<THREE.Group>(null!);
+    const leftKneeRef = useRef<THREE.Group>(null!);
+    const rightKneeRef = useRef<THREE.Group>(null!);
 
     const SPEED = HALL_INTERIOR.WALK_SPEED;
     const W = HALL_INTERIOR.ROOM_WIDTH;
@@ -97,7 +71,25 @@ export default function HallInteriorPlayer({
     useFrame((_, delta) => {
         if (!groupRef.current) return;
 
-        // Movement
+        const fpPos = HALL_INTERIOR.FIREPLACE_POS;
+
+        // Check if being externally controlled (cutscene auto-walk)
+        const noInput = !keys.current["w"] && !keys.current["s"] &&
+                       !keys.current["a"] && !keys.current["d"] &&
+                       !keys.current["arrowup"] && !keys.current["arrowdown"] &&
+                       !keys.current["arrowleft"] && !keys.current["arrowright"];
+        const extPos = positionRef.current;
+        const meshPos = groupRef.current.position;
+        const extDist = Math.hypot(extPos.x - meshPos.x, extPos.z - meshPos.z);
+        const isExternallyControlled = noInput && extDist > 0.05;
+
+        if (isExternallyControlled) {
+            // Sync mesh position & rotation from external refs (cutscene auto-walk)
+            groupRef.current.position.copy(extPos);
+            currentAngle.current = angleRef.current;
+            groupRef.current.rotation.y = currentAngle.current;
+            isMoving.current = true;
+        } else {
         direction.current.set(0, 0, 0);
         const ROT_SPEED = PLAYER.ROT_SPEED;
 
@@ -175,7 +167,6 @@ export default function HallInteriorPlayer({
         }
 
         // Fireplace collision (scaled 1.4x)
-        const fpPos = HALL_INTERIOR.FIREPLACE_POS;
         if (nextZ < fpPos[2] + 1.4 && Math.abs(nextX - fpPos[0]) < 1.7) {
             nextZ = fpPos[2] + 1.4;
         }
@@ -210,7 +201,7 @@ export default function HallInteriorPlayer({
 
         positionRef.current.copy(groupRef.current.position);
         angleRef.current = currentAngle.current;
-
+        } // end of normal input block
         // Exit proximity check
         const distToExit = new THREE.Vector2(
             groupRef.current.position.x - EXIT_POS.x,
@@ -292,83 +283,34 @@ export default function HallInteriorPlayer({
         const legSwing = walkCycle * WALK_ANIM.LEG_SWING;
         if (leftLegRef.current) leftLegRef.current.rotation.x = -legSwing;
         if (rightLegRef.current) rightLegRef.current.rotation.x = legSwing;
+
+        // Knee bending
+        if (leftKneeRef.current && leftLegRef.current) {
+            leftKneeRef.current.rotation.x = leftLegRef.current.rotation.x > 0 ? leftLegRef.current.rotation.x * 1.5 : 0;
+        }
+        if (rightKneeRef.current && rightLegRef.current) {
+            rightKneeRef.current.rotation.x = rightLegRef.current.rotation.x > 0 ? rightLegRef.current.rotation.x * 1.5 : 0;
+        }
     });
 
     return (
         <group ref={groupRef}>
-            <group ref={bodyGroupRef}>
-                {/* Head */}
-                <group ref={headRef} position={[0, 1.65, 0]}>
-                    <mesh castShadow material={skinMat}>
-                        <boxGeometry args={[0.35, 0.35, 0.35]} />
-                    </mesh>
-                    {/* Hair */}
-                    <mesh position={[0, 0.12, -0.02]} castShadow material={hairMat}>
-                        <boxGeometry args={[0.38, 0.18, 0.38]} />
-                    </mesh>
-                    {/* Eyes */}
-                    <mesh position={[-0.08, 0.02, 0.18]}>
-                        <boxGeometry args={[0.06, 0.04, 0.02]} />
-                        <meshStandardMaterial color="#202025" emissive="#303040" emissiveIntensity={0.3} />
-                    </mesh>
-                    <mesh position={[0.08, 0.02, 0.18]}>
-                        <boxGeometry args={[0.06, 0.04, 0.02]} />
-                        <meshStandardMaterial color="#202025" emissive="#303040" emissiveIntensity={0.3} />
-                    </mesh>
-                </group>
-
-                {/* Torso */}
-                <mesh position={[0, 1.2, 0]} castShadow material={shirtMat}>
-                    <boxGeometry args={[0.5, 0.55, 0.28]} />
-                </mesh>
-
-                {/* Left Arm */}
-                <group ref={leftArmRef} position={[-0.35, 1.35, 0]}>
-                    <mesh position={[0, -0.22, 0]} castShadow material={shirtMat}>
-                        <boxGeometry args={[0.18, 0.45, 0.18]} />
-                    </mesh>
-                    <mesh position={[0, -0.5, 0]} castShadow material={skinMat}>
-                        <boxGeometry args={[0.14, 0.15, 0.14]} />
-                    </mesh>
-                </group>
-
-                {/* Right Arm */}
-                <group ref={rightArmRef} position={[0.35, 1.35, 0]}>
-                    <mesh position={[0, -0.22, 0]} castShadow material={shirtMat}>
-                        <boxGeometry args={[0.18, 0.45, 0.18]} />
-                    </mesh>
-                    <mesh position={[0, -0.5, 0]} castShadow material={skinMat}>
-                        <boxGeometry args={[0.14, 0.15, 0.14]} />
-                    </mesh>
-                </group>
-
-                {/* Hips */}
-                <mesh position={[0, 0.85, 0]} castShadow material={pantsMat}>
-                    <boxGeometry args={[0.45, 0.2, 0.25]} />
-                </mesh>
-
-                {/* Left Leg */}
-                <group ref={leftLegRef} position={[-0.12, 0.65, 0]}>
-                    <mesh position={[0, -0.2, 0]} castShadow material={pantsMat}>
-                        <boxGeometry args={[0.18, 0.45, 0.2]} />
-                    </mesh>
-                    <mesh position={[0, -0.48, 0.02]} castShadow material={shoeMat}>
-                        <boxGeometry args={[0.18, 0.12, 0.25]} />
-                    </mesh>
-                </group>
-
-                {/* Right Leg */}
-                <group ref={rightLegRef} position={[0.12, 0.65, 0]}>
-                    <mesh position={[0, -0.2, 0]} castShadow material={pantsMat}>
-                        <boxGeometry args={[0.18, 0.45, 0.2]} />
-                    </mesh>
-                    <mesh position={[0, -0.48, 0.02]} castShadow material={shoeMat}>
-                        <boxGeometry args={[0.18, 0.12, 0.25]} />
-                    </mesh>
-                </group>
+            <group position={[0, 1.3, 0]}>
+              <PlayerBodyMesh
+                  bodyGroupRef={bodyGroupRef}
+                  headRef={headRef}
+                  leftArmRef={leftArmRef}
+                  rightArmRef={rightArmRef}
+                  leftLegRef={leftLegRef}
+                  rightLegRef={rightLegRef}
+                  leftKneeRef={leftKneeRef}
+                  rightKneeRef={rightKneeRef}
+                  flashlightGroupRef={undefined}
+                  hasTorch={false}
+              />
             </group>
 
-            {/* Player overhead light (subtle, so player is visible) */}
+            {/* Player overhead light (subtle, so player is visible in interior) */}
             <pointLight
                 position={[0, 2.5, 0]}
                 color="#887766"

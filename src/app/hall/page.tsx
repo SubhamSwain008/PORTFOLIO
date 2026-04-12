@@ -15,6 +15,7 @@ import HealthBar from "@/components/HealthBar";
 import StaminaBar from "@/components/StaminaBar";
 import HungerManager from "@/components/HungerManager";
 import DeathOverlay from "@/components/DeathOverlay";
+import SettingsOverlay from "@/components/SettingsOverlay";
 import { loadGameData, setSessionState, getSessionState, initSession } from "@/components/useSessionStore";
 
 const HallInteriorScene = dynamic(
@@ -55,7 +56,9 @@ export default function HallPage() {
     useEffect(() => {
         if (!authorized) return;
 
-        // Restore user session if this was a hard navigation directly into /hall
+        let cancelled = false;
+        let hydrationDone = false;
+
         async function initHall() {
             const session = getSessionState();
             if (session.userEmail) {
@@ -64,18 +67,36 @@ export default function HallPage() {
             } else {
                 await initSession();
             }
+            hydrationDone = true;
         }
         initHall();
 
         setLoading(true);
         setFadeOut(false);
 
-        const minTimer = setTimeout(() => {
-            setFadeOut(true);
-            setTimeout(() => setLoading(false), 800);
-        }, 2200);
+        // Minimum visual time (2.2s) AND wait for hydration up to 8s.
+        // If hydration is still going past 8s, proceed anyway — the
+        // NetworkMonitor HUD will tell the user why stats may be stale.
+        const MIN_MS = 2200;
+        const MAX_MS = 10000;
+        const POLL = 150;
+        const start = Date.now();
+        const poll = setInterval(() => {
+            if (cancelled) return;
+            const elapsed = Date.now() - start;
+            if (elapsed >= MIN_MS && (hydrationDone || elapsed >= MAX_MS)) {
+                clearInterval(poll);
+                setFadeOut(true);
+                setTimeout(() => {
+                    if (!cancelled) setLoading(false);
+                }, 800);
+            }
+        }, POLL);
 
-        return () => clearTimeout(minTimer);
+        return () => {
+            cancelled = true;
+            clearInterval(poll);
+        };
     }, [authorized]);
 
     // ─── Access Denied Screen ───────────────────────────────
@@ -340,6 +361,9 @@ export default function HallPage() {
             <HealthBar />
             <StaminaBar />
             <DeathOverlay />
+
+            {/* Settings gear icon — same as outdoor world */}
+            <SettingsOverlay />
         </>
     );
 }

@@ -15,6 +15,19 @@ async function getUserId(): Promise<number | null> {
   return users[0]?.id ?? null;
 }
 
+async function ensureTable(sql: any) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS "game_saves" (
+      "id" SERIAL PRIMARY KEY,
+      "userId" INTEGER NOT NULL,
+      "health" REAL DEFAULT 100,
+      "hunger" REAL DEFAULT 100,
+      "inventory" JSONB DEFAULT '[]'::jsonb,
+      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+}
+
 export async function GET() {
     try {
         const userId = await getUserId();
@@ -22,6 +35,8 @@ export async function GET() {
 
         const { neon } = require('@neondatabase/serverless');
         const sql = neon(process.env.neon_db_direct || process.env.DATABASE_URL || "postgresql://neondb_owner:npg_ZIp8aCD5sPdk@ep-quiet-scene-aitufoy0-pooler.c-4.us-east-1.aws.neon.tech:443/neondb?sslmode=require");
+
+        await ensureTable(sql);
 
         const saves = await sql`SELECT * FROM game_saves WHERE "userId" = ${userId} ORDER BY created_at DESC`;
 
@@ -39,6 +54,8 @@ export async function POST(request: Request) {
 
         const { neon } = require('@neondatabase/serverless');
         const sql = neon(process.env.neon_db_direct || process.env.DATABASE_URL || "postgresql://neondb_owner:npg_ZIp8aCD5sPdk@ep-quiet-scene-aitufoy0-pooler.c-4.us-east-1.aws.neon.tech:443/neondb?sslmode=require");
+
+        await ensureTable(sql);
 
         const body = await request.json();
         const { health = 100, hunger = 100, inventory = [] } = body;
@@ -58,3 +75,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+

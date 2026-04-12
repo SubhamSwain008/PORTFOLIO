@@ -5,6 +5,7 @@ import { getStaminaState, setStaminaState } from "./useStaminaStore";
 import { getSessionState } from "./useSessionStore";
 import { getGameState, setGameState } from "./useGameStore";
 import { setInventoryState } from "./inventory/inventory";
+import { netFetch, netPostBackground } from "@/lib/netFetch";
 import {
   HUNGER,
   HUNGER_DRAIN_PER_SECOND,
@@ -41,42 +42,65 @@ export default function HungerManager() {
 
         // ─── Death check ───
         if (nextHealth <= 0) {
-          // Defer state mutations to avoid crashing R3F render cycle
           setTimeout(() => {
             setGameState({ isDead: true, deathCause: "starvation" });
-            // Only wipe player inventory items, keep worldItems intact
             setInventoryState({ items: [] });
-            fetch("/api/game/save-death", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            }).catch(() => {});
+            // Death save: critical — retry aggressively in the background.
+            netPostBackground("/api/game/save-death", {}, { retries: 4, timeoutMs: 15000 });
           }, 0);
         }
       }
     }, intervalTime);
 
     // ─── Save hunger + health to DB every 60 seconds ───
-    const dbInterval = setInterval(() => {
+    // If a save fails we DO NOT drop the attempt; `pendingSave` keeps
+    // the latest values queued, and the next tick retries.
+    let pendingSave: { hunger: number; health: number } | null = null;
+    let inFlight = false;
+
+    const doSave = async () => {
+      if (inFlight) return;
       const session = getSessionState();
       if (session.mode !== "login") return;
-
       const game = getGameState();
       if (game.isDead) return;
 
-      const currentHunger = getHungerState().hunger;
-      const currentHealth = getHealthState().health;
-      fetch("/api/game/save-hunger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hunger: currentHunger, health: currentHealth }),
-      }).catch((err) => {
-        console.error("Failed to save vitals", err);
-      });
-    }, HUNGER.DB_SAVE_INTERVAL);
+      const payload = pendingSave ?? {
+        hunger: getHungerState().hunger,
+        health: getHealthState().health,
+      };
+      pendingSave = payload;
+      inFlight = true;
+      try {
+        const res = await netFetch("/api/game/save-hunger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          timeoutMs: 12000,
+          retries: 2,
+          backoffMs: 500,
+        });
+        if (res.ok) {
+          pendingSave = null;
+        }
+        // Non-ok (e.g. 503): keep pendingSave so next tick retries.
+      } catch {
+        // Network/timeout: keep pendingSave so next tick retries.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const dbInterval = setInterval(doSave, HUNGER.DB_SAVE_INTERVAL);
+
+    // Opportunistic retry when the browser regains connectivity
+    const onOnline = () => { doSave(); };
+    window.addEventListener("online", onOnline);
 
     return () => {
       clearInterval(decayInterval);
       clearInterval(dbInterval);
+      window.removeEventListener("online", onOnline);
     };
   }, []);
 

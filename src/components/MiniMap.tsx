@@ -59,8 +59,8 @@ export function MiniMap() {
     <div
       style={{
         position: "fixed",
-        top: 24,
-        left: 24,
+        top: 64, // leave room for NetworkMonitor HUD above
+        left: 14,
         width: MINIMAP.SIZE,
         height: MINIMAP.SIZE,
         borderRadius: "50%",

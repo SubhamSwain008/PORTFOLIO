@@ -1,40 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-    if (!email || !password) {
+    const { email, otp } = await req.json();
+    if (!email || !otp) {
       return NextResponse.json(
-        { ok: false, error: "Email and password required" },
+        { ok: false, error: "Email and OTP required" },
         { status: 400 }
       );
     }
 
-    // Setup Neon HTTP connection
-    const { neon } = require("@neondatabase/serverless");
-    const sql = neon(
-      process.env.neon_db_direct || process.env.DATABASE_URL || ""
-    );
+    // Check OTP
+    const verification = await prisma.otpVerification.findUnique({
+      where: { email },
+    });
 
-    // Find existing user
-    const users = await sql`SELECT * FROM "users" WHERE "email" = ${email}`;
-    const user = users[0];
+    if (!verification) {
+      return NextResponse.json(
+        { ok: false, error: "No pending OTP for this email" },
+        { status: 400 }
+      );
+    }
+
+    if (verification.otp !== otp) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid OTP" },
+        { status: 401 }
+      );
+    }
+
+    if (verification.expiresAt < new Date()) {
+      return NextResponse.json(
+        { ok: false, error: "OTP has expired" },
+        { status: 401 }
+      );
+    }
+
+    // Delete the verification record to prevent reuse
+    await prisma.otpVerification.delete({
+      where: { email },
+    });
+
+    // Create user if they don't exist
+    // Upsert doesn't let us easily just do nothing on update to avoid changing updatedAt if we had one.
+    // Using findUnique then create is fine.
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (!user) {
-      // User doesn't exist, create them with the provided password
-      await sql`
-        INSERT INTO "users" ("email", "password", "created_at")
-        VALUES (${email}, ${password}, NOW())
-      `;
-    } else {
-      // User exists, check if password matches
-      if (user.password !== password) {
-        return NextResponse.json(
-          { ok: false, error: "Invalid password" },
-          { status: 401 }
-        );
-      }
+      user = await prisma.user.create({
+        data: {
+          email,
+          // password omitted since it is optional now, and we use OTP
+        },
+      });
     }
 
     // Set session cookie — simple base64 encoded email (as it was before)

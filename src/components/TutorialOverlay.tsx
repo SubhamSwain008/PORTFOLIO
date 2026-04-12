@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getGameState, setGameState, useGameStore } from "./useGameStore";
 import { getSessionState, setSessionState } from "./useSessionStore";
+import { netPostBackground } from "@/lib/netFetch";
 
 // ─── Tutorial Page Data ─────────────────────────────────────
 interface TutorialPage {
@@ -247,19 +248,15 @@ export default function TutorialOverlay() {
     }
   }, [isTutorialOpen]);
 
-  const handleFinish = useCallback(async () => {
+  const handleFinish = useCallback(() => {
     setGameState({ isTutorialOpen: false, isPaused: false });
 
-    // Mark tutorial as complete in DB (login mode only)
+    // Fire-and-forget: mark tutorial as complete in DB (login mode only)
     const session = getSessionState();
     if (session.mode === "login") {
-      try {
-        await fetch("/api/game/save-tutorial", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-      } catch {}
+      netPostBackground("/api/game/save-tutorial", {}, { retries: 3 });
     }
+
     setSessionState({ firstTimePlayed: false });
   }, []);
 

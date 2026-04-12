@@ -5,6 +5,7 @@ import { useGameStore, setGameState } from "../../useGameStore";
 import { useInventoryStore, removeItems } from "../../inventory/inventory";
 import { getItemDef } from "../../inventory/types";
 import { getHungerState, setHungerState } from "../../useHungerStore";
+import { netPostBackground } from "@/lib/netFetch";
 
 const ITEM_ICONS: Record<string, string> = {
     cooked_apple: "🥧",
@@ -46,11 +47,7 @@ export default function EatingHUD() {
             const newHunger = Math.min(100, currentHunger + def.hungerRestore);
             setHungerState({ hunger: newHunger });
 
-            fetch("/api/game/save-hunger", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hunger: newHunger })
-            }).catch(() => {});
+            netPostBackground("/api/game/save-hunger", { hunger: newHunger });
         }
     };
 

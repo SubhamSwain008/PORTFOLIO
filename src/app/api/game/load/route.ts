@@ -17,6 +17,30 @@ export async function GET() {
     const { neon } = require("@neondatabase/serverless");
     const sql = neon(process.env.neon_db_direct || process.env.neon_db || "");
 
+    // Ensure user_game_state table exists (safe to run multiple times)
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS "user_game_state" (
+          "id" SERIAL PRIMARY KEY,
+          "userId" INTEGER NOT NULL UNIQUE,
+          "inventory" JSONB DEFAULT '[]'::jsonb,
+          "hunger" DOUBLE PRECISION DEFAULT 100,
+          "health" DOUBLE PRECISION DEFAULT 100,
+          "positionX" DOUBLE PRECISION DEFAULT 0,
+          "positionY" DOUBLE PRECISION DEFAULT 1.3,
+          "positionZ" DOUBLE PRECISION DEFAULT 8,
+          "currentWorld" TEXT DEFAULT 'night',
+          "firstTimePlayed" BOOLEAN DEFAULT true,
+          "currentChapter" INTEGER DEFAULT 1,
+          "storyConversations" JSONB DEFAULT '[]'::jsonb,
+          "chapterCompleted" JSONB DEFAULT '[]'::jsonb,
+          "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+        )
+      `;
+    } catch {
+      // Table already exists or migration not needed — continue silently
+    }
+
     // Get user
     const users = await sql`SELECT "id" FROM "users" WHERE "email" = ${email}`;
     const user = users[0];
@@ -33,7 +57,7 @@ export async function GET() {
       // Create default game state
       await sql`
         INSERT INTO "user_game_state" ("userId", "inventory", "hunger", "health", "positionX", "positionY", "positionZ", "currentWorld", "firstTimePlayed", "updatedAt")
-        VALUES (${userId}, '[]'::jsonb, 100, 100, 0, 1.3, 8, 'night', true, NOW())
+        VALUES (${userId}, '[]'::jsonb, 100, 100, 0, 1.3, 8, 'hall', true, NOW())
       `;
       rows = await sql`SELECT * FROM "user_game_state" WHERE "userId" = ${userId}`;
     }
@@ -52,6 +76,9 @@ export async function GET() {
       },
       currentWorld: state.currentWorld || "night",
       firstTimePlayed: state.firstTimePlayed ?? true,
+      currentChapter: state.currentChapter ?? 1,
+      storyConversations: state.storyConversations ?? [],
+      chapterCompleted: state.chapterCompleted ?? [],
     });
   } catch (err: unknown) {
     console.error("game/load error:", err);

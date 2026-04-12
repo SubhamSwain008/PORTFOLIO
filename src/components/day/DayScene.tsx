@@ -15,6 +15,7 @@ import { MiniMap, MiniMapLogic } from "../MiniMap";
 import StaminaBar from "../StaminaBar";
 import { getSessionState } from "../useSessionStore";
 import { getHungerState } from "../useHungerStore";
+import { netPostBackground } from "@/lib/netFetch";
 import { useWorldSettings, getBrightnessFilter } from "../useWorldSettings";
 import MobileControls from "../MobileControls";
 import { DAY_LIGHTING, CAMERA, TRANSITION, GATE, PORTAL } from "../settings/settings";
@@ -193,18 +194,15 @@ function DayXKeyHandler() {
     nearRef.current = isNearPortal;
 
     useEffect(() => {
-        const handleKeyDown = async (e: KeyboardEvent) => {
+        const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.toLowerCase() === "x" && !e.repeat) {
                 if (nearRef.current) {
                     const session = getSessionState();
                     if (session.mode === "login") {
-                        try {
-                            await fetch("/api/game/save-hunger", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ hunger: getHungerState().hunger }),
-                            });
-                        } catch (err) {}
+                        // Fire-and-forget — don't block portal travel on network.
+                        netPostBackground("/api/game/save-hunger", {
+                            hunger: getHungerState().hunger,
+                        });
                     }
                     // Navigate back to night world — full page reload frees all day world memory
                     window.location.href = "/?portal=true";

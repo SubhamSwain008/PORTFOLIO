@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { setInventoryState } from "./inventory/inventory";
 import { setHungerState } from "./useHungerStore";
 import { setHealthState } from "./useHealthStore";
+import { netFetch, NetFetchError } from "@/lib/netFetch";
 
 // ─── Types ───────────────────────────────────────────────
 export type AppPhase = "loading" | "mode-select" | "login" | "game";
@@ -18,6 +19,9 @@ export interface SessionState {
   initialPosition: { x: number; y: number; z: number } | null;
   currentWorld: string;
   firstTimePlayed: boolean;
+  currentChapter: number;
+  storyConversations: Array<{ speaker: string; text: string; chapter: number }>;
+  chapterCompleted: number[];
 }
 
 // ─── Singleton store ─────────────────────────────────────
@@ -29,7 +33,10 @@ let state: SessionState = {
   gameDataLoaded: false,
   initialPosition: null,
   currentWorld: "night",
-  firstTimePlayed: true,
+  firstTimePlayed: false,
+  currentChapter: 1,
+  storyConversations: [],
+  chapterCompleted: [],
 };
 
 type Listener = () => void;
@@ -63,42 +70,62 @@ export function useSessionStore<T>(selector: (s: SessionState) => T): T {
 }
 
 // ─── Load game data from DB (inventory, position, world) ─
-export async function loadGameData(): Promise<boolean> {
+// Returns:
+//   { ok: true, hydrated: true }  — data loaded into stores
+//   { ok: true, hydrated: false } — request succeeded but no data
+//   { ok: false, transient: true } — network/timeout/5xx; should retry
+//   { ok: false, transient: false } — 4xx; session likely invalid
+export async function loadGameData(): Promise<{
+  ok: boolean;
+  hydrated?: boolean;
+  transient?: boolean;
+}> {
   try {
-    const gameRes = await fetch("/api/game/load");
-    if (gameRes.ok) {
-      const gameData = await gameRes.json();
-      if (gameData.ok) {
-        // Hydrate inventory store
-        if (gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
-          setInventoryState({ items: gameData.inventory });
-        }
-        // Hydrate hunger store
-        if (gameData.hunger !== undefined) {
-          setHungerState({ hunger: gameData.hunger });
-        }
-        // Hydrate health store
-        if (gameData.health !== undefined) {
-          setHealthState({ health: gameData.health });
-        }
-        // Store initial position and world
-        if (gameData.position) {
-          setSessionState({
-            initialPosition: gameData.position,
-            currentWorld: gameData.currentWorld || "night",
-            firstTimePlayed: gameData.firstTimePlayed ?? false,
-          });
-        }
-        return true;
-      }
+    // Generous timeout + 2 retries for hydration (critical path)
+    const gameRes = await netFetch("/api/game/load", {
+      timeoutMs: 20000,
+      retries: 2,
+      backoffMs: 600,
+    });
+    if (!gameRes.ok) {
+      const transient = gameRes.status >= 500;
+      return { ok: false, transient };
     }
-  } catch {
-    // Game data fetch failed — continue with defaults
+    const gameData = await gameRes.json();
+    if (!gameData.ok) return { ok: true, hydrated: false };
+
+    if (gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
+      setInventoryState({ items: gameData.inventory });
+    }
+    if (gameData.hunger !== undefined) {
+      setHungerState({ hunger: gameData.hunger });
+    }
+    if (gameData.health !== undefined) {
+      setHealthState({ health: gameData.health });
+    }
+    if (gameData.position) {
+      setSessionState({
+        initialPosition: gameData.position,
+        currentWorld: gameData.currentWorld || "hall",
+        firstTimePlayed: gameData.firstTimePlayed ?? false,
+        currentChapter: gameData.currentChapter ?? 1,
+        storyConversations: gameData.storyConversations ?? [],
+        chapterCompleted: gameData.chapterCompleted ?? [],
+      });
+    }
+    return { ok: true, hydrated: true };
+  } catch (err) {
+    // NetFetchError — timeout or network. Definitely transient.
+    if (err instanceof NetFetchError) {
+      return { ok: false, transient: true };
+    }
+    return { ok: false, transient: true };
   }
-  return false;
 }
 
 // ─── Init: check existing session + load game data ───────
+// Key fix: never downgrade to "mode-select" on transient failures.
+// Only explicit 401 from /api/auth/me counts as "not logged in".
 export async function initSession() {
   // Load persisted music preference
   if (typeof window !== "undefined") {
@@ -108,42 +135,72 @@ export async function initSession() {
     }
   }
 
+  let authRes: Response | null = null;
   try {
-    const res = await fetch("/api/auth/me");
-    if (res.ok) {
-      const data = await res.json();
-      setSessionState({
-        userEmail: data.email,
-        mode: "login",
-      });
-
-      // Fetch game data from DB
-      const loaded = await loadGameData();
-      if (loaded) {
-        const session = getSessionState();
-        // Smart routing logic
-        // Only redirect if NOT traveling through a portal
-        if (session.initialPosition && !window.location.search.includes("portal=true")) {
-          const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
-          const targetRoute = W_ROUTES[session.currentWorld] || "/";
-          
-          // If we are not currently on the persistent world's route, redirect before rendering game
-          const isHall = window.location.pathname === "/hall";
-          if (!isHall && window.location.pathname !== targetRoute) {
-            window.location.href = targetRoute;
-            return; // Stop initialization render
-          }
-        }
-      }
-
-      setSessionState({
-        appPhase: "game",
-        gameDataLoaded: true,
-      });
-      return;
-    }
+    authRes = await netFetch("/api/auth/me", {
+      timeoutMs: 15000,
+      retries: 2,
+      backoffMs: 500,
+    });
   } catch {
-    // No session
+    // Network/timeout — DO NOT log out. Keep current state; let the
+    // NetworkMonitor HUD show the problem so the user knows why.
+    // If this was the first boot (no prior session), fall through to
+    // mode-select so the user can at least see the menu.
+    if (!getSessionState().userEmail) {
+      setSessionState({ appPhase: "mode-select", gameDataLoaded: true });
+    } else {
+      setSessionState({ appPhase: "game", gameDataLoaded: true });
+    }
+    return;
   }
-  setSessionState({ appPhase: "mode-select", gameDataLoaded: true });
+
+  if (authRes.status === 401) {
+    // Truly logged out
+    setSessionState({ appPhase: "mode-select", gameDataLoaded: true });
+    return;
+  }
+
+  if (!authRes.ok) {
+    // 5xx / 503 transient — keep prior session intact, proceed to game.
+    if (!getSessionState().userEmail) {
+      setSessionState({ appPhase: "mode-select", gameDataLoaded: true });
+    } else {
+      setSessionState({ appPhase: "game", gameDataLoaded: true });
+    }
+    return;
+  }
+
+  const data = await authRes.json().catch(() => ({ ok: false }));
+  if (!data.ok || !data.email) {
+    setSessionState({ appPhase: "mode-select", gameDataLoaded: true });
+    return;
+  }
+
+  setSessionState({
+    userEmail: data.email,
+    mode: "login",
+  });
+
+  const result = await loadGameData();
+  // Only act on routing if we actually hydrated fresh data
+  if (result.ok && result.hydrated) {
+    const session = getSessionState();
+    if (session.initialPosition && !window.location.search.includes("portal=true")) {
+      const W_ROUTES: Record<string, string> = { night: "/", day: "/realm", hall: "/hall" };
+      const targetRoute = W_ROUTES[session.currentWorld] || "/";
+      const isHall = window.location.pathname === "/hall";
+      if (!isHall && window.location.pathname !== targetRoute) {
+        if (targetRoute === "/hall") {
+          sessionStorage.setItem("hallEntryAllowed", "true");
+        }
+        window.location.href = targetRoute;
+        return;
+      }
+    }
+  }
+
+  // Regardless of hydration result, enter game — the user is authenticated.
+  // Stale/missing data will be re-synced by the stat stores' retry loops.
+  setSessionState({ appPhase: "game", gameDataLoaded: true });
 }

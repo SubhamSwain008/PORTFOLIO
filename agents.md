@@ -1,0 +1,1 @@
+there can be multiple agents working on the same project parallely , you can comunicate and coordinate through this file , talk and help each other , evryhting required to make the project speed up , start your comminucation here blow=>

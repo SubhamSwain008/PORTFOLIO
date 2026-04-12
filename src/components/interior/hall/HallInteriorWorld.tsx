@@ -487,6 +487,10 @@ export default function HallInteriorWorld() {
     floorTex.minFilter = THREE.NearestFilter;
     floorTex.repeat.set(4, 4);
 
+    const doorTex = useTexture("/assets/door.png");
+    doorTex.magFilter = THREE.NearestFilter;
+    doorTex.minFilter = THREE.NearestFilter;
+
     const stoneMat = useMemo(
         () =>
             new THREE.MeshStandardMaterial({
@@ -625,6 +629,12 @@ export default function HallInteriorWorld() {
             <mesh position={[0, DOOR_HEIGHT + 0.1, D / 2 + 0.05]}>
                 <boxGeometry args={[DOOR_WIDTH + 0.3, 0.15, 0.12]} />
                 <meshStandardMaterial color="#2a1508" roughness={0.85} metalness={0.15} />
+            </mesh>
+
+            {/* Door texture — visible from inside */}
+            <mesh position={[0, DOOR_HEIGHT / 2, D / 2 - 0.02]} rotation={[0, Math.PI, 0]}>
+                <planeGeometry args={[DOOR_WIDTH, DOOR_HEIGHT]} />
+                <meshStandardMaterial map={doorTex} transparent roughness={0.85} metalness={0.05} />
             </mesh>
 
             {/* ═══ FURNITURE ═══ */}

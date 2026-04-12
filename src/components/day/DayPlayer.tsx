@@ -13,39 +13,13 @@ import { useSearchParams } from "next/navigation";
 import { getGameState, setGameState } from "../useGameStore";
 import { getSessionState } from "../useSessionStore";
 import { getStaminaState, setStaminaState } from "../useStaminaStore";
+import PlayerBodyMesh from "../PlayerBodyMesh";
 
 interface DayPlayerProps {
     positionRef: React.MutableRefObject<THREE.Vector3>;
     keys: React.MutableRefObject<Record<string, boolean>>;
     angleRef?: React.MutableRefObject<number>;
 }
-
-// ─── Shared materials — daytime-appropriate colors ───
-const skinMat = new THREE.MeshStandardMaterial({
-    color: "#d4b89a",
-    roughness: 0.65,
-    metalness: 0.03,
-});
-const shirtMat = new THREE.MeshStandardMaterial({
-    color: "#4a5a70",
-    roughness: 0.7,
-    metalness: 0.08,
-});
-const pantsMat = new THREE.MeshStandardMaterial({
-    color: "#3a4550",
-    roughness: 0.8,
-    metalness: 0.06,
-});
-const shoeMat = new THREE.MeshStandardMaterial({
-    color: "#2a2a2f",
-    roughness: 0.9,
-    metalness: 0.12,
-});
-const hairMat = new THREE.MeshStandardMaterial({
-    color: "#1c1820",
-    roughness: 0.95,
-    metalness: 0.0,
-});
 
 export default function DayPlayer({ positionRef, keys, angleRef }: DayPlayerProps) {
     const groupRef = useRef<THREE.Group>(null!);
@@ -62,6 +36,8 @@ export default function DayPlayer({ positionRef, keys, angleRef }: DayPlayerProp
     const rightArmRef = useRef<THREE.Group>(null!);
     const leftLegRef = useRef<THREE.Group>(null!);
     const rightLegRef = useRef<THREE.Group>(null!);
+    const leftKneeRef = useRef<THREE.Group>(null!);
+    const rightKneeRef = useRef<THREE.Group>(null!);
 
     const SPEED = PLAYER.WALK_SPEED;
     const PORTAL_POS = new THREE.Vector3(...PORTAL.PORTAL_POS);
@@ -452,220 +428,16 @@ export default function DayPlayer({ positionRef, keys, angleRef }: DayPlayerProp
 
     return (
         <group ref={groupRef} position={initPos}>
-            <group ref={bodyGroupRef}>
-
-                {/* ════════════ TORSO ════════════ */}
-                <mesh castShadow position={[0, 0.15, 0]}>
-                    <boxGeometry args={[0.5, 0.45, 0.28]} />
-                    <primitive object={shirtMat} attach="material" />
-                </mesh>
-                <mesh castShadow position={[0, 0.32, 0]}>
-                    <boxGeometry args={[0.56, 0.12, 0.26]} />
-                    <primitive object={shirtMat} attach="material" />
-                </mesh>
-                <mesh castShadow position={[0, -0.12, 0]}>
-                    <boxGeometry args={[0.42, 0.2, 0.24]} />
-                    <primitive object={shirtMat} attach="material" />
-                </mesh>
-                {/* Belt */}
-                <mesh castShadow position={[0, -0.2, 0]}>
-                    <boxGeometry args={[0.44, 0.06, 0.26]} />
-                    <meshStandardMaterial color="#2a2420" roughness={0.5} metalness={0.3} />
-                </mesh>
-                <mesh castShadow position={[0, -0.2, 0.13]}>
-                    <boxGeometry args={[0.06, 0.05, 0.02]} />
-                    <meshStandardMaterial color="#b8a060" roughness={0.3} metalness={0.7} />
-                </mesh>
-
-                {/* ════════════ HIPS ════════════ */}
-                <mesh castShadow position={[0, -0.32, 0]}>
-                    <boxGeometry args={[0.42, 0.15, 0.24]} />
-                    <primitive object={pantsMat} attach="material" />
-                </mesh>
-
-                {/* ════════════ HEAD GROUP ════════════ */}
-                <group ref={headRef} position={[0, 0.6, 0]}>
-                    <mesh castShadow position={[0, -0.12, 0]}>
-                        <cylinderGeometry args={[0.08, 0.1, 0.12, 8]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, 0.08, 0]}>
-                        <boxGeometry args={[0.26, 0.28, 0.26]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.02, 0.02]}>
-                        <boxGeometry args={[0.22, 0.08, 0.22]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    {/* Hair */}
-                    <mesh castShadow position={[0, 0.2, -0.01]}>
-                        <boxGeometry args={[0.28, 0.08, 0.28]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, 0.1, -0.12]}>
-                        <boxGeometry args={[0.27, 0.22, 0.06]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[-0.13, 0.1, -0.02]}>
-                        <boxGeometry args={[0.04, 0.18, 0.2]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0.13, 0.1, -0.02]}>
-                        <boxGeometry args={[0.04, 0.18, 0.2]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    {/* Eyes */}
-                    <mesh position={[-0.07, 0.1, 0.13]}>
-                        <sphereGeometry args={[0.03, 6, 6]} />
-                        <meshStandardMaterial color="#e8e8e8" emissive="#444444" emissiveIntensity={0.3} />
-                    </mesh>
-                    <mesh position={[-0.07, 0.1, 0.155]}>
-                        <sphereGeometry args={[0.015, 6, 6]} />
-                        <meshStandardMaterial color="#1a1a1a" />
-                    </mesh>
-                    <mesh position={[0.07, 0.1, 0.13]}>
-                        <sphereGeometry args={[0.03, 6, 6]} />
-                        <meshStandardMaterial color="#e8e8e8" emissive="#444444" emissiveIntensity={0.3} />
-                    </mesh>
-                    <mesh position={[0.07, 0.1, 0.155]}>
-                        <sphereGeometry args={[0.015, 6, 6]} />
-                        <meshStandardMaterial color="#1a1a1a" />
-                    </mesh>
-                    {/* Nose */}
-                    <mesh position={[0, 0.06, 0.14]}>
-                        <boxGeometry args={[0.04, 0.06, 0.04]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    {/* Mouth */}
-                    <mesh position={[0, -0.0, 0.135]}>
-                        <boxGeometry args={[0.08, 0.015, 0.01]} />
-                        <meshStandardMaterial color="#8a6060" roughness={0.8} />
-                    </mesh>
-                    {/* Eyebrows */}
-                    <mesh position={[-0.07, 0.15, 0.13]}>
-                        <boxGeometry args={[0.06, 0.015, 0.02]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    <mesh position={[0.07, 0.15, 0.13]}>
-                        <boxGeometry args={[0.06, 0.015, 0.02]} />
-                        <primitive object={hairMat} attach="material" />
-                    </mesh>
-                    {/* Ears */}
-                    <mesh castShadow position={[-0.14, 0.06, 0]}>
-                        <boxGeometry args={[0.04, 0.08, 0.06]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0.14, 0.06, 0]}>
-                        <boxGeometry args={[0.04, 0.08, 0.06]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                </group>
-
-                {/* ════════════ LEFT ARM ════════════ */}
-                <group ref={leftArmRef} position={[-0.33, 0.28, 0]}>
-                    <mesh castShadow position={[0, -0.16, 0]}>
-                        <boxGeometry args={[0.13, 0.3, 0.13]} />
-                        <primitive object={shirtMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.3, 0]}>
-                        <sphereGeometry args={[0.06, 6, 6]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.43, 0]}>
-                        <boxGeometry args={[0.11, 0.24, 0.11]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.58, 0]}>
-                        <boxGeometry args={[0.1, 0.08, 0.08]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.64, 0]}>
-                        <boxGeometry args={[0.08, 0.06, 0.06]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                </group>
-
-                {/* ════════════ RIGHT ARM (no flashlight — swings freely) ════════════ */}
-                <group ref={rightArmRef} position={[0.33, 0.28, 0]}>
-                    <mesh castShadow position={[0, -0.16, 0]}>
-                        <boxGeometry args={[0.13, 0.3, 0.13]} />
-                        <primitive object={shirtMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.3, 0]}>
-                        <sphereGeometry args={[0.06, 6, 6]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.43, 0]}>
-                        <boxGeometry args={[0.11, 0.24, 0.11]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.58, 0]}>
-                        <boxGeometry args={[0.1, 0.08, 0.08]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.64, 0]}>
-                        <boxGeometry args={[0.08, 0.06, 0.06]} />
-                        <primitive object={skinMat} attach="material" />
-                    </mesh>
-                </group>
-
-                {/* ════════════ LEFT LEG ════════════ */}
-                <group ref={leftLegRef} position={[-0.12, -0.40, 0]}>
-                    <mesh castShadow position={[0, -0.18, 0]}>
-                        <boxGeometry args={[0.18, 0.36, 0.18]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.36, 0]}>
-                        <sphereGeometry args={[0.075, 6, 6]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.56, 0]}>
-                        <boxGeometry args={[0.16, 0.34, 0.16]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.73, 0]}>
-                        <sphereGeometry args={[0.07, 6, 6]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.82, 0.04]}>
-                        <boxGeometry args={[0.16, 0.09, 0.26]} />
-                        <primitive object={shoeMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.88, 0.04]}>
-                        <boxGeometry args={[0.17, 0.025, 0.28]} />
-                        <meshStandardMaterial color="#111115" roughness={0.95} />
-                    </mesh>
-                </group>
-
-                {/* ════════════ RIGHT LEG ════════════ */}
-                <group ref={rightLegRef} position={[0.12, -0.40, 0]}>
-                    <mesh castShadow position={[0, -0.18, 0]}>
-                        <boxGeometry args={[0.18, 0.36, 0.18]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.36, 0]}>
-                        <sphereGeometry args={[0.075, 6, 6]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.56, 0]}>
-                        <boxGeometry args={[0.16, 0.34, 0.16]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.73, 0]}>
-                        <sphereGeometry args={[0.07, 6, 6]} />
-                        <primitive object={pantsMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.82, 0.04]}>
-                        <boxGeometry args={[0.16, 0.09, 0.26]} />
-                        <primitive object={shoeMat} attach="material" />
-                    </mesh>
-                    <mesh castShadow position={[0, -0.88, 0.04]}>
-                        <boxGeometry args={[0.17, 0.025, 0.28]} />
-                        <meshStandardMaterial color="#111115" roughness={0.95} />
-                    </mesh>
-                </group>
-
-            </group>
+            <PlayerBodyMesh
+                bodyGroupRef={bodyGroupRef}
+                headRef={headRef}
+                leftArmRef={leftArmRef}
+                rightArmRef={rightArmRef}
+                leftLegRef={leftLegRef}
+                rightLegRef={rightLegRef}
+                leftKneeRef={leftKneeRef}
+                rightKneeRef={rightKneeRef}
+            />
         </group>
     );
 }

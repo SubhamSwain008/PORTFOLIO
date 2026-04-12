@@ -16,6 +16,7 @@ import DeathOverlay from "@/components/DeathOverlay";
 import { useGameStore } from "@/components/useGameStore";
 import { useEnemyStore, getEnemyState } from "@/components/useEnemyStore";
 import { crossfade } from "@/components/audioUtils";
+import { netFetch } from "@/lib/netFetch";
 
 const DayScene = dynamic(() => import("@/components/day/DayScene"), {
     ssr: false,
@@ -39,12 +40,15 @@ export default function RealmPage() {
     // Initialize session (loads user + inventory from DB)
     useEffect(() => {
         async function loadGameData() {
-            // If session is already initialized (coming from night world), just load inventory
             const session = getSessionState();
             if (session.userEmail) {
-                // Already have a session, just fetch inventory
+                // Already have a session — resilient inventory/stat refresh
                 try {
-                    const gameRes = await fetch("/api/game/load");
+                    const gameRes = await netFetch("/api/game/load", {
+                        timeoutMs: 15000,
+                        retries: 2,
+                        backoffMs: 500,
+                    });
                     if (gameRes.ok) {
                         const gameData = await gameRes.json();
                         if (gameData.ok && gameData.inventory && Array.isArray(gameData.inventory) && gameData.inventory.length > 0) {
@@ -58,11 +62,10 @@ export default function RealmPage() {
                         }
                     }
                 } catch {
-                    // silent fail
+                    // Transient — stats keep their local values; auto-save catches up.
                 }
                 setSessionState({ appPhase: "game", gameDataLoaded: true });
             } else {
-                // Full page load — run full init
                 await initSession();
             }
         }
@@ -72,8 +75,7 @@ export default function RealmPage() {
     // Also handle redirect to login page if unauthenticated
     useEffect(() => {
         if (appPhase === "mode-select" || appPhase === "login") {
-            const W_ROUTES: Record<string, string> = { night: "/", day: "/realm" };
-            // Actually, if not logged in, just go to root `/` for login screen
+            // If not logged in, bounce to root `/` for login screen
             if (!getSessionState().userEmail) {
                 window.location.href = "/";
             }
@@ -81,14 +83,28 @@ export default function RealmPage() {
     }, [appPhase]);
 
     useEffect(() => {
-        // Minimum loading screen display time for smooth transition
-        const minTimer = setTimeout(() => {
-            setFadeOut(true);
-            // After fade out animation completes, remove overlay
-            setTimeout(() => setLoading(false), 800);
-        }, 2500);
-
-        return () => clearTimeout(minTimer);
+        // Wait for appPhase === "game" (data hydrated) OR a hard cap of 10s
+        // so slow networks don't trap the user on the loading screen.
+        const MIN_MS = 2500;
+        const MAX_MS = 10000;
+        const start = Date.now();
+        let cancelled = false;
+        const poll = setInterval(() => {
+            if (cancelled) return;
+            const elapsed = Date.now() - start;
+            const ready = appPhase === "game";
+            if (elapsed >= MIN_MS && (ready || elapsed >= MAX_MS)) {
+                clearInterval(poll);
+                setFadeOut(true);
+                setTimeout(() => {
+                    if (!cancelled) setLoading(false);
+                }, 800);
+            }
+        }, 150);
+        return () => {
+            cancelled = true;
+            clearInterval(poll);
+        };
     }, [appPhase]);
 
     // ─── Audio Toggle Logic ───

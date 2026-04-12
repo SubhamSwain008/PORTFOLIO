@@ -136,7 +136,7 @@ export const PORTAL = {
   /** Default spawn position (new players) */
   DEFAULT_SPAWN: [0, 1.3, 8] as const,
   /** Spawn position when arriving through portal */
-  PORTAL_ARRIVAL_SPAWN: [-10, 1.3, -40] as const,
+  PORTAL_ARRIVAL_SPAWN: [0, 1.3, -7] as const,
   /** Z position of the day-portal billboard prompt */
   BILLBOARD_Z: -44.9,
 } as const;

@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { CollectedItem, SpawnedItem, ITEM_REGISTRY, getItemDef } from "./types";
 import { setSavingStatus } from "../SaveIndicator";
 import { INVENTORY, ITEM_SPAWN_CONFIG, WORLD } from "../settings/settings";
+import { netPostBackground } from "@/lib/netFetch";
 
 // ─── Inventory State ─────────────────────────────────────
 export interface InventoryState {
@@ -82,15 +83,14 @@ export function collectItem(itemId: string, realm: string, spawnId: string) {
     worldItems: { ...current.worldItems, [realm]: newRealmItems },
   });
 
-  // Fire-and-forget: save to DB (non-blocking)
+  // Fire-and-forget: save to DB (non-blocking, retry-safe)
   const collectedItem = newItems.find((i) => i.itemId === itemId);
   if (collectedItem) {
     setSavingStatus("Saving…");
-    fetch("/api/game/save-item", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, quantity: collectedItem.quantity }),
-    }).catch(() => {}); // silent fail — don't break the game
+    netPostBackground("/api/game/save-item", {
+      itemId,
+      quantity: collectedItem.quantity,
+    });
   }
 }
 
@@ -115,11 +115,7 @@ export function addItems(itemId: string, amount: number = 1) {
 
   setInventoryState({ items: newItems });
   setSavingStatus("Saving…");
-  fetch("/api/game/save-item", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemId, quantity: finalQuantity }),
-  }).catch(() => {});
+  netPostBackground("/api/game/save-item", { itemId, quantity: finalQuantity });
 }
 
 // ─── Remove an item arbitrarily ──────────────────────────────
@@ -145,11 +141,7 @@ export function removeItems(itemId: string, amount: number = 1): boolean {
 
   setInventoryState({ items: newItems });
   setSavingStatus("Saving…");
-  fetch("/api/game/save-item", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemId, quantity: finalQuantity }),
-  }).catch(() => {});
+  netPostBackground("/api/game/save-item", { itemId, quantity: finalQuantity });
 
   return true;
 }

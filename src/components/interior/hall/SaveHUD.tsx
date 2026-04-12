@@ -5,6 +5,7 @@ import { useGameStore, setGameState } from "../../useGameStore";
 import { getHealthState, setHealthState } from "../../useHealthStore";
 import { getHungerState, setHungerState } from "../../useHungerStore";
 import { getInventoryState, setInventoryState } from "../../inventory/inventory";
+import { netFetch, NetFetchError } from "@/lib/netFetch";
 
 interface GameSave {
     id: number;
@@ -21,11 +22,18 @@ export default function SaveHUD() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const friendlyErr = (err: unknown, fallback: string) => {
+        if (err instanceof NetFetchError && err.kind === "timeout") {
+            return "Server is slow to respond — please try again.";
+        }
+        return fallback;
+    };
+
     const fetchSaves = async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("/api/game/saves");
+            const res = await netFetch("/api/game/saves", { timeoutMs: 15000, retries: 2 });
             const data = await res.json();
             if (data.ok) {
                 setSaves(data.saves);
@@ -33,7 +41,7 @@ export default function SaveHUD() {
                 setError(data.error || "Failed to load saves.");
             }
         } catch (err) {
-            setError("Network error fetching saves.");
+            setError(friendlyErr(err, "Network error fetching saves."));
         }
         setLoading(false);
     };
@@ -52,10 +60,12 @@ export default function SaveHUD() {
             const hunger = getHungerState().hunger;
             const inventory = getInventoryState().items;
 
-            const res = await fetch("/api/game/saves", {
+            const res = await netFetch("/api/game/saves", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ health, hunger, inventory }),
+                timeoutMs: 20000,
+                retries: 2,
             });
             const data = await res.json();
             if (data.ok) {
@@ -64,7 +74,7 @@ export default function SaveHUD() {
                 setError(data.error || "Failed to create save.");
             }
         } catch (err) {
-            setError("Network error creating save.");
+            setError(friendlyErr(err, "Network error creating save."));
         }
         setLoading(false);
     };
@@ -73,10 +83,12 @@ export default function SaveHUD() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("/api/game/load-save", {
+            const res = await netFetch("/api/game/load-save", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ saveId }),
+                timeoutMs: 20000,
+                retries: 2,
             });
             const data = await res.json();
             if (data.ok) {
@@ -103,7 +115,7 @@ export default function SaveHUD() {
                 setError(data.error || "Failed to load save.");
             }
         } catch (err) {
-            setError("Network error loading save.");
+            setError(friendlyErr(err, "Network error loading save."));
         }
         setLoading(false);
     };

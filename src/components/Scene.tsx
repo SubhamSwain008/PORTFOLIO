@@ -16,6 +16,7 @@ import SaveIndicator, { setSavingStatus } from "./SaveIndicator";
 import { getSessionState } from "./useSessionStore";
 import { getHungerState } from "./useHungerStore";
 import { getHealthState } from "./useHealthStore";
+import { netPostBackground } from "@/lib/netFetch";
 import {
   useGameStore,
   getGameState,
@@ -116,29 +117,25 @@ function XKeyHandler() {
         if (state.gameMode === "explore" && state.isNearPortal) {
           const session = getSessionState();
           if (session.mode === "login") {
-            try {
-              await fetch("/api/game/save-hunger", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hunger: getHungerState().hunger, health: getHealthState().health }),
-              });
-            } catch (err) {}
+            // Fire-and-forget: never block portal travel on network.
+            // The auto-save loop (HungerManager + PositionAutoSave) also
+            // runs continuously, so a dropped save here is recoverable.
+            netPostBackground("/api/game/save-hunger", {
+              hunger: getHungerState().hunger,
+              health: getHealthState().health,
+            });
           }
           // Navigate to the daytime realm — full page nav frees night world memory
           window.location.href = "/realm?portal=true";
           return;
         } else if (state.gameMode === "explore" && state.isNearEntrance) {
-          // Navigate to the hall interior page
           sessionStorage.setItem("hallEntryAllowed", "true");
           const session = getSessionState();
           if (session.mode === "login") {
-            try {
-              await fetch("/api/game/save-hunger", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hunger: getHungerState().hunger, health: getHealthState().health }),
-              });
-            } catch (err) {}
+            netPostBackground("/api/game/save-hunger", {
+              hunger: getHungerState().hunger,
+              health: getHealthState().health,
+            });
           }
           window.location.href = "/hall";
           return;
